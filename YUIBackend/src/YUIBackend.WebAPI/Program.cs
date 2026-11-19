@@ -13,6 +13,7 @@ using MyProject.WebAPI.Middleware;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Scalar.AspNetCore;
 using Serilog;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -165,9 +166,11 @@ public partial class Program {
 
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
-            app.UseSwaggerUI(options =>
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "YUIBackend API v1"));
+            app.MapSwagger("/swagger/{documentName}/swagger.json").AllowAnonymous();
+            app.MapScalarApiReference(options => options
+                .WithTitle("YUIBackend API")
+                .WithOpenApiRoutePattern("../swagger/{documentName}/swagger.json"))
+                .AllowAnonymous();
         }
 
         app.UseHttpsRedirection();

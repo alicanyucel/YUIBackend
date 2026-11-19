@@ -44,7 +44,7 @@
 | `src/YUIBackend.Domain` | Entity'ler, domain sözleşmeleri, `Result` tipleri ve repository arayüzleri |
 | `src/YUIBackend.Application` | CQRS query/command handler'ları, FluentValidation doğrulamaları, DTO'lar ve pipeline behavior'ları |
 | `src/YUIBackend.Infrastructure` | `AppDbContext`, EF Core konfigürasyonları/migration'ları, SQL Server, repository implementasyonları, Redis ve MassTransit |
-| `src/YUIBackend.WebAPI` | ASP.NET Core başlangıcı, controller'lar, JWT kimlik doğrulama, middleware, Swagger ve health endpoint'i |
+| `src/YUIBackend.WebAPI` | ASP.NET Core başlangıcı, controller'lar, JWT kimlik doğrulama, middleware, Scalar ve health endpoint'i |
 | `tests/YUIBackend.Tests` | xUnit birim ve SQL Server entegrasyon testleri |
 
 ## Gereksinimler
@@ -113,7 +113,7 @@ dotnet ef database update --project ".\src\YUIBackend.Infrastructure\YUIBackend.
 dotnet run --project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj" --launch-profile http
 ```
 
-HTTP profili `http://localhost:5270` adresini kullanır ve tarayıcıda Swagger'ı açar. Swagger UI: <http://localhost:5270/swagger>. HTTPS profili: <https://localhost:7139/swagger>. OpenAPI JSON belgesi `/swagger/v1/swagger.json` adresinde Development ortamında sunulur.
+HTTP profili `http://localhost:5270` adresini kullanır ve tarayıcıda Scalar'ı açar. Scalar arayüzü: <http://localhost:5270/scalar>. HTTPS profili: <https://localhost:7139/scalar>. OpenAPI JSON belgesi `/swagger/v1/swagger.json` adresinde Development ortamında sunulur.
 
 Port kullanımda hatası alırsanız, önce çalışan eski API örneğini Visual Studio Stop düğmesi veya `Shift+F5` ile durdurun. Birden fazla API örneği aynı portu aynı anda dinleyemez.
 
@@ -370,7 +370,7 @@ Yanıtta `items`, `totalCount`, `pageNumber`, `pageSize` ve `totalPages` alanlar
 - Hesabı olan müşteri ve bakiyesi sıfır olmayan hesap soft delete edilemez. Bakiye sıfır olmayan hesap `Closed` durumuna da geçirilemez.
 - Para yatırma/çekme ve transferler SQL transaction içinde yürütülür; bakiye değişiklikleri koşullu atomik SQL güncellemeleriyle yapılır. Transfer hesapları GUID sırasıyla kilitlenir ve transaction içinde tamamı başarılı olur veya geri alınır.
 - Her işlem için benzersiz `Idempotency-Key` kullanılır. Veritabanındaki benzersiz, nullable indeks tekrar isteklerini eşzamanlı durumda da korur; anahtar eski ledger kayıtlarında nullable kalır.
-- Login endpoint'i dışında controller işlemleri fallback authorization policy ile JWT ister. Swagger/OpenAPI arayüzü Development ortamında etkinleştirilir.
+- Login endpoint'i dışında controller işlemleri fallback authorization policy ile JWT ister. Scalar/OpenAPI arayüzü Development ortamında etkinleştirilir.
 - JWT issuer/audience/signing key doğrulanır; yalnızca HS256 kabul edilir. Geliştirme ve üretimde ayrı, rastgele ve güçlü imza anahtarı kullanın.
 
 ## EF Core migration işlemleri
@@ -438,7 +438,8 @@ Versiyonlar proje dosyalarındaki doğrudan `PackageReference` değerleridir. Tr
 
 | `Serilog.Sinks.MSSqlServer` | 9.0.0 | Logları SQL Server'a yazma ve `ApplicationLogs` tablosunu oluşturma |
 | `System.Configuration.ConfigurationManager` | 9.0.4 | ConfigurationManager uyumluluk bağımlılığı |
-| `Swashbuckle.AspNetCore` | 11.0.1 | Swagger/OpenAPI belgesi ve Swagger UI |
+| `Scalar.AspNetCore` | 3.0.2 | OpenAPI belgesi için Scalar API arayüzü |
+| `Swashbuckle.AspNetCore` | 11.0.1 | OpenAPI belgesi üretimi |
 | `Microsoft.EntityFrameworkCore.Design` | 10.0.6 | WebAPI startup projesi üzerinden EF tasarım zamanı |
 | `OpenTelemetry.Exporter.Prometheus.AspNetCore` | 1.15.2-beta.1 | Prometheus exporter |
 | `OpenTelemetry.Extensions.Hosting` | 1.15.2 | Host ile OpenTelemetry entegrasyonu |
@@ -501,7 +502,7 @@ dotnet ef database update --project ".\src\YUIBackend.Infrastructure\YUIBackend.
 docker compose up --build -d api
 ```
 
-Swagger: <http://localhost:5270/swagger>. SQL Server, Redis ve RabbitMQ health-check'leri sağlıklı olmadan API başlatılmaz. Migration uygulama başlangıcında otomatik çalışmaz. İsteğe bağlı Prometheus/Grafana'yı `observability` profili ve ayrı bir `GRAFANA_ADMIN_PASSWORD` ile başlatabilirsiniz: `docker compose --profile observability up -d`. Bu Compose yapılandırması yerel geliştirme içindir; production ortamında secret manager, TLS, ağ erişim politikası, yedekleme ve imaj sürüm sabitlemesi ayrıca sağlanmalıdır.
+Scalar: <http://localhost:5270/scalar>. SQL Server, Redis ve RabbitMQ health-check'leri sağlıklı olmadan API başlatılmaz. Migration uygulama başlangıcında otomatik çalışmaz. İsteğe bağlı Prometheus/Grafana'yı `observability` profili ve ayrı bir `GRAFANA_ADMIN_PASSWORD` ile başlatabilirsiniz: `docker compose --profile observability up -d`. Bu Compose yapılandırması yerel geliştirme içindir; production ortamında secret manager, TLS, ağ erişim politikası, yedekleme ve imaj sürüm sabitlemesi ayrıca sağlanmalıdır.
 
 ## Bilinen notlar
 
