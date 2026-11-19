@@ -9,4 +9,6 @@ public sealed class FinancialTransactionType : SmartEnums<FinancialTransactionTy
     public static readonly FinancialTransactionType Deposit = new(nameof(Deposit), 1);
     public static readonly FinancialTransactionType Withdrawal = new(nameof(Withdrawal), 2);
     public static readonly FinancialTransactionType Transfer = new(nameof(Transfer), 3);
+
+    static FinancialTransactionType() { }
 }

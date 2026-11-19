@@ -134,9 +134,6 @@ builder.Services.AddProblemDetails();
 // ─────────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// Apply database migrations separately with `dotnet ef database update`.
-// This keeps the API and Swagger available while the database is unavailable.
-
 // ── Pipeline ──────────────────────────────────────────────────────────────
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler();

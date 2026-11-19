@@ -31,6 +31,17 @@ internal sealed class FinancialTransactionConfiguration : IEntityTypeConfigurati
         builder.Property(transaction => transaction.Description)
             .HasMaxLength(500);
 
+        builder.Property(transaction => transaction.FailureReason)
+            .HasMaxLength(300);
+
+        builder.Property(transaction => transaction.IdempotencyKey)
+            .HasMaxLength(128);
+
+        builder.HasIndex(transaction => transaction.IdempotencyKey)
+            .IsUnique()
+            .HasFilter("[IdempotencyKey] IS NOT NULL");
+
+        builder.HasIndex(transaction => new { transaction.OccurredAt, transaction.Status });
         builder.HasIndex(transaction => new { transaction.SourceAccountId, transaction.OccurredAt });
         builder.HasIndex(transaction => new { transaction.DestinationAccountId, transaction.OccurredAt });
         builder.HasIndex(transaction => new { transaction.Type, transaction.Status, transaction.OccurredAt });

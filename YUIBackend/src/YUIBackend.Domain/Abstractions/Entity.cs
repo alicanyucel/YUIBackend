@@ -18,7 +18,7 @@ public abstract class Entity
 
     public void MarkUpdated() => UpdatedAt = DateTime.UtcNow;
 
-    public void SoftDelete()
+    public virtual void SoftDelete()
     {
         IsDeleted = true;
         UpdatedAt = DateTime.UtcNow;

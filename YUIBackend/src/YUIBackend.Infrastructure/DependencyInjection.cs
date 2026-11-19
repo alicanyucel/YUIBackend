@@ -1,5 +1,6 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using MyProject.Application.Abstractions.FinancialOperations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyProject.Application.Abstractions.Messaging;
@@ -28,8 +29,10 @@ public static class DependencyInjection
             .FromAssemblyOf<AppDbContext>()
             .AddClasses(classes => classes.InNamespaces(
                 "MyProject.Infrastructure.Repositories",
+                "MyProject.Infrastructure.FinancialOperations",
                 "MyProject.Infrastructure.Cache",
-                "MyProject.Infrastructure.MultiTenancy"), publicOnly: false)
+                "MyProject.Infrastructure.MultiTenancy")
+                .Where(type => !type.IsNested), publicOnly: false)
             .AsImplementedInterfaces()
             .WithScopedLifetime());
         services.AddScoped<IEventBus, EventBus>();

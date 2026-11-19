@@ -315,6 +315,14 @@ namespace MyProject.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("DestinationAccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -349,10 +357,16 @@ namespace MyProject.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+
                     b.HasIndex("TransactionNumber")
                         .IsUnique();
 
                     b.HasIndex("DestinationAccountId", "OccurredAt");
+
+                    b.HasIndex("OccurredAt", "Status");
 
                     b.HasIndex("SourceAccountId", "OccurredAt");
 

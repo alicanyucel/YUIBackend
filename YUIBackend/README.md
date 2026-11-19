@@ -180,9 +180,13 @@ Controller uçları JWT ister; istisnalar login ve health endpoint'idir. Aşağ�
 | `POST` | `/api/accounts` | Müşteriye hesap açar |
 | `PUT` | `/api/accounts/{id}` | Hesap durumunu (`Active`, `Inactive`, `Closed`) günceller |
 | `DELETE` | `/api/accounts/{id}` | Bakiyesi sıfır olan hesabı soft delete eder. |
-| `GET` | `/api/financialtransactions?pageNumber=1&pageSize=20` | Finansal hareketlerin sayfalı, en yeniden eskiye listesi |
+| `POST` | `/api/financialtransactions/deposit` | Hesaba para yatırır; `Idempotency-Key` header'ı zorunludur |
+| `POST` | `/api/financialtransactions/withdraw` | Hesaptan para çeker; `Idempotency-Key` header'ı zorunludur |
+| `POST` | `/api/financialtransactions/transfer` | Hesaplar arasında transfer yapar; `Idempotency-Key` header'ı zorunludur |
+| `GET` | `/api/financialtransactions` | Hesap, tarih, tür ve tutar filtreleriyle sayfalı işlem geçmişi |
 | `GET` | `/api/financialtransactions/{id}` | Finansal işlem detayı |
-| `GET` | `/api/financialtransactions/account/{accountId}?pageNumber=1&pageSize=20` | Hesap bazlı sayfalı finansal işlem geçmişi |
+| `GET` | `/api/financialtransactions/account/{accountId}` | Hesap bazlı, filtreli ve sayfalı finansal işlem geçmişi |
+| `GET` | `/api/financialtransactions/reports` | Günlük, haftalık veya aylık işlem raporu; hesap filtresi isteğe bağlı |
 | `GET` | `/api/products?pageNumber=1&pageSize=20` | Ürün sayfalı listesi |
 | `GET` | `/api/products/{id}` | Ürün detayı |
 | `POST` | `/api/products` | Ürün oluşturur |
@@ -223,7 +227,45 @@ Hesap güncelleme JSON örneği:
 
 `PUT` isteklerinin route içindeki `id` değeri ile JSON gövdesindeki `id` aynı olmalıdır.
 
-> Finansal işlem controller'ı şu anda sadece işlem kaydı ve geçmişini okur. Para yatırma/çekme/transfer yazma endpoint'leri bu API yüzeyinde henüz uygulanmış değildir. Finansal işlem kayıtları silinemez/güncellenemez; bu, denetim geçmişinin korunması içindir.
+### Para yatırma, çekme ve transfer
+
+İşlem endpoint'leri `Idempotency-Key` header'ını zorunlu tutar. İstemci bir isteğin sonucunu alamazsa aynı key ve aynı içerikle tekrar deneyebilir; yinelenen istek aynı işlemi tekrar uygulamaz. Aynı key farklı bir payload ile kullanılırsa `409 Conflict` döner. Key'i her retry'da yeniden üretmeyin.
+
+```powershell
+$headers = @{
+    Authorization = "Bearer $($login.accessToken)"
+    "Idempotency-Key" = [guid]::NewGuid().ToString()
+}
+$deposit = @{ accountId = "<account-guid>"; amount = 100.25; description = "Hesaba para yatırma" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri "http://localhost:5270/api/financialtransactions/deposit" -Headers $headers -ContentType "application/json" -Body $deposit
+```
+
+Çekme gövdesi aynı `accountId`, `amount` ve isteğe bağlı `description` alanlarını kullanır; endpoint `/api/financialtransactions/withdraw` olur. Transfer gövdesi:
+
+```json
+{
+  "sourceAccountId": "<source-account-guid>",
+  "destinationAccountId": "<destination-account-guid>",
+  "amount": 25.50,
+  "description": "Hesaplar arası transfer"
+}
+```
+
+Transferi `POST /api/financialtransactions/transfer` adresine aynı zorunlu header ile gönderin. Tutar pozitif, en fazla iki ondalık basamaklı ve desteklenen bakiye sınırları içinde olmalıdır. Yetersiz bakiye, pasif hesap, farklı para birimi ve bakiye üst sınırı gibi iş kuralları başarısız işlem kaydı oluşturur ve `422 Unprocessable Entity` ile açıklanır. Başarılı yeni işlem `201`, başarılı tekrar `200`, hesap bulunamaması `404` döner.
+
+### İşlem geçmişi ve raporlar
+
+İşlem listeleme endpoint'leri `accountId`, `fromUtc`, `toUtc`, `type` (`Deposit`, `Withdrawal`, `Transfer`), `minimumAmount`, `maximumAmount`, `pageNumber`, `pageSize` ve `descending` query parametrelerini destekler. Tarih aralığı UTC olmalı; `fromUtc`/`toUtc` ISO-8601 biçiminde gönderilmelidir. Örnek:
+
+```text
+GET /api/financialtransactions?accountId=<account-guid>&fromUtc=2026-01-01T00:00:00Z&toUtc=2026-02-01T00:00:00Z&type=Transfer&minimumAmount=10&pageNumber=1&pageSize=20&descending=true
+GET /api/financialtransactions/account/<account-guid>?fromUtc=2026-01-01T00:00:00Z&toUtc=2026-02-01T00:00:00Z
+GET /api/financialtransactions/reports?fromUtc=2026-01-01T00:00:00Z&toUtc=2026-02-01T00:00:00Z&period=Weekly&accountId=<account-guid>
+```
+
+Rapor `period` değeri `Daily`, `Weekly` (Pazartesi başlangıçlı) veya `Monthly` olabilir. Yanıtta başarılı işlemler için para giriş/çıkış toplamı, başarılı/başarısız işlem sayıları ve dönem bazlı kırılım yer alır. Hesap raporunda yalnızca ilgili hesabın giriş/çıkışları toplanır; transfer iki hesap açısından da uygun yönde sayılır. Rapor tarih aralığı en fazla beş yıldır ve `toUtc` üst sınırı hariç tutulur.
+
+İşlem geçmişi değiştirilemez ve silinemez; başarısız finansal denemeler de denetim amacıyla kaydedilir.
 
 ## Sayfalama
 
@@ -244,6 +286,8 @@ Yanıtta `items`, `totalCount`, `pageNumber`, `pageSize` ve `totalPages` alanlar
 - `AccountStatus`, `FinancialTransactionStatus` ve `FinancialTransactionType`, `ACY.SmartEnums` ile type-safe singleton değerleridir; EF Core veritabanında adlarını string olarak saklar.
 - `IsDeleted` global query filter ile listelerden ve ID sorgularından gizlenir; fiziksel satır korunur. Soft delete geri alma endpoint'i yoktur.
 - Hesabı olan müşteri ve bakiyesi sıfır olmayan hesap soft delete edilemez. Bakiye sıfır olmayan hesap `Closed` durumuna da geçirilemez.
+- Para yatırma/çekme ve transferler SQL transaction içinde yürütülür; bakiye değişiklikleri koşullu atomik SQL güncellemeleriyle yapılır. Transfer hesapları GUID sırasıyla kilitlenir ve transaction içinde tamamı başarılı olur veya geri alınır.
+- Her işlem için benzersiz `Idempotency-Key` kullanılır. Veritabanındaki benzersiz, nullable indeks tekrar isteklerini eşzamanlı durumda da korur; anahtar eski ledger kayıtlarında nullable kalır.
 - Login endpoint'i dışında controller işlemleri fallback authorization policy ile JWT ister. Swagger/OpenAPI arayüzü Development ortamında etkinleştirilir.
 - JWT issuer/audience/signing key doğrulanır; yalnızca HS256 kabul edilir. Geliştirme ve üretimde ayrı, rastgele ve güçlü imza anahtarı kullanın.
 
@@ -333,7 +377,7 @@ Testleri çalıştırmak için:
 dotnet test ".\tests\YUIBackend.Tests\YUIBackend.Tests.csproj"
 ```
 
-Test projesindeki `CreateProductCommandHandlerTests` şu anda `CS0122` (handler erişilebilir değil) derleme hatası verebilir. Test assembly adı ile Application projesindeki `InternalsVisibleTo` assembly adı eşleşmelidir. Bu durum düzeltilmeden testler çalışmaz.
+Test projesi handler testleri ile finansal komut doğrulamaları/idempotency payload kontrollerini içerir. Yeni testleri dahil etmek için bu komutu çalıştırın.
 
 ## Docker durumu
 
@@ -344,4 +388,4 @@ Depoda `Dockerfile` ve `docker-compose.yml` vardır; ancak mevcut dosyalardaki p
 - SQL Server bağlantısı ve geçerli JWT ayarları olmadan DB işlemleri ve login çalışmaz; migration ve API başlatma birbirinden ayrı adımlardır.
 - Redis/RabbitMQ kullanımı ilgili servislerin erişilebilir olmasını gerektirir. Broker kapalıysa mesajlaşma çalışmaz ve bağlantı uyarıları görülebilir.
 - Paket geri yükleme/derleme sırasında bazı doğrudan veya transitif paketlerin NuGet güvenlik uyarıları görülebilir; paketlerin güvenlik bültenleri ayrıca kontrol edilmelidir.
-- Finansal yatırma/çekme/transfer komutları, bakiye güncelleme ve raporlama endpoint'leri bu belgede listelenen mevcut API uçlarına dahil değildir.
+- SQL Server'a özgü `UPDLOCK`/`ROWLOCK` ipuçları ve rapor gruplama fonksiyonları SQL Server sağlayıcısına bağlıdır; farklı veritabanı sağlayıcısına geçişte uyarlanmalıdır.

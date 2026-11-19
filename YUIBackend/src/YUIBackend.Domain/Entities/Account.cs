@@ -15,7 +15,7 @@ public sealed class Account : Entity
 
     public Guid CustomerId { get; set; }
     public string AccountNumber { get; set; } = null!;
-    public decimal Balance { get; set; }
+    public decimal Balance { get; private set; }
     public string CurrencyCode { get; set; } = null!;
     public AccountStatus Status { get; set; } = AccountStatus.Active;
 

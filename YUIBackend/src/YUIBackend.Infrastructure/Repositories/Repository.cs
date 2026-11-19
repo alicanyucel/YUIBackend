@@ -35,9 +35,9 @@ internal abstract class Repository<T>(AppDbContext context) : IRepository<T>
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
         => await DbSet.AddAsync(entity, cancellationToken);
 
-    public void Update(T entity)
+    public virtual void Update(T entity)
         => DbSet.Update(entity);
 
-    public void Delete(T entity)
+    public virtual void Delete(T entity)
         => entity.SoftDelete();
 }
