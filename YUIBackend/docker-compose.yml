@@ -1,97 +1,94 @@
-version: '3.9'
-
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: cleanarch-api
-    ports:
-      - "5000:8080"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__SqlServer=Data Source=sqlserver;Initial Catalog=CleanArchDb;User ID=sa;Password=YourStrong@Passw0rd;Encrypt=True;TrustServerCertificate=True
-      - ConnectionStrings__Redis=redis:6379
-      - ConnectionStrings__RabbitMQ=amqp://guest:guest@rabbitmq:5672
-    depends_on:
-      - sqlserver
-      - redis
-      - rabbitmq
-    networks:
-      - cleanarch-net
-
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: cleanarch-sqlserver
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD before starting Compose}
     ports:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
-    networks:
-      - cleanarch-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    container_name: cleanarch-redis
     ports:
       - "6379:6379"
-    networks:
-      - cleanarch-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: cleanarch-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5270:8080"
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    networks:
-      - cleanarch-net
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__SqlServer: "Server=sqlserver,1433;Database=YUIBackend;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD before starting Compose};Encrypt=True;TrustServerCertificate=True"
+      ConnectionStrings__Redis: redis:6379,abortConnect=false
+      ConnectionStrings__RabbitMQ: rabbitmq://rabbitmq
+      Jwt__Issuer: YUIBackend
+      Jwt__Audience: YUIBackend.Client
+      Jwt__SecretKey: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY before starting Compose}
+      InitialUser__Username: ${INITIAL_USER_USERNAME:?Set INITIAL_USER_USERNAME before starting Compose}
+      InitialUser__Password: ${INITIAL_USER_PASSWORD:?Set INITIAL_USER_PASSWORD before starting Compose}
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: cleanarch-prometheus
+    profiles: [observability]
     ports:
       - "9090:9090"
     volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      - cleanarch-net
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - api
 
   grafana:
     image: grafana/grafana:latest
-    container_name: cleanarch-grafana
+    profiles: [observability]
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD for the observability profile}
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
-    networks:
-      - cleanarch-net
-
-  seq:
-    image: datalust/seq:latest
-    container_name: cleanarch-seq
-    ports:
-      - "5341:5341"
-      - "8080:80"
-    environment:
-      - ACCEPT_EULA=Y
-    networks:
-      - cleanarch-net
 
 volumes:
   sqlserver_data:
   grafana_data:
-
-networks:
-  cleanarch-net:
-    driver: bridge

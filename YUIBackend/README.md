@@ -17,7 +17,8 @@
 - [EF Core migration işlemleri](#ef-core-migration-işlemleri)
 - [Kullanılan NuGet paketleri](#kullanılan-nuget-paketleri)
 - [Testler](#testler)
-- [Docker durumu](#docker-durumu)
+- [Docker Compose](#docker-compose)
+- [Mimari dokümanı](ARCHITECTURE.md)
 - [Bilinen notlar](#bilinen-notlar)
 
 ## Teknoloji ve mimari
@@ -44,13 +45,13 @@
 | `src/YUIBackend.Application` | CQRS query/command handler'ları, FluentValidation doğrulamaları, DTO'lar ve pipeline behavior'ları |
 | `src/YUIBackend.Infrastructure` | `AppDbContext`, EF Core konfigürasyonları/migration'ları, SQL Server, repository implementasyonları, Redis ve MassTransit |
 | `src/YUIBackend.WebAPI` | ASP.NET Core başlangıcı, controller'lar, JWT kimlik doğrulama, middleware, Swagger ve health endpoint'i |
-| `tests/YUIBackend.Tests` | xUnit birim testleri |
+| `tests/YUIBackend.Tests` | xUnit birim ve SQL Server entegrasyon testleri |
 
 ## Gereksinimler
 
 - .NET 10 SDK
 - SQL Server (bağlantı dizesi User Secrets veya ortam değişkeninde tanımlanmalı)
-- İsteğe bağlı: Redis ve RabbitMQ. Bu servisler kullanılacak özellikler için çalışır durumda olmalıdır.
+- Redis ve RabbitMQ (mevcut API host'u bunları başlangıçta yapılandırır; yerel çalıştırmada ikisi de erişilebilir olmalıdır)
 - EF CLI: `dotnet tool install --global dotnet-ef` (zaten kuruluysa yeniden yüklemeyin)
 
 ## Yerel kurulum
@@ -83,7 +84,7 @@ $rng.Dispose()
 Remove-Variable jwtKey, bytes, rng
 ```
 
-`Remove-Variable` sadece PowerShell değişkenini temizler; User Secrets'taki ayarı silmez. Gerekli servisleri kullanıyorsanız Redis ve RabbitMQ bağlantılarını da ekleyin:
+`Remove-Variable` sadece PowerShell değişkenini temizler; User Secrets'taki ayarı silmez. Mevcut host yapılandırması Redis ve RabbitMQ bağlantılarını da beklediğinden yerel çalıştırma için bunları User Secrets'a ekleyin:
 
 ```powershell
 dotnet user-secrets set "ConnectionStrings:Redis" "<Redis-connection-string>" --project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj"
@@ -116,24 +117,62 @@ HTTP profili `http://localhost:5270` adresini kullanır ve tarayıcıda Swagger'
 
 Port kullanımda hatası alırsanız, önce çalışan eski API örneğini Visual Studio Stop düğmesi veya `Shift+F5` ile durdurun. Birden fazla API örneği aynı portu aynı anda dinleyemez.
 
-## İlk kullanıcı ve JWT token
+## Çoklu kullanıcı, kayıt ve JWT token
 
-### Kullanıcı adı ve parola
+### Yönetici hesabını ilk kez oluşturma
 
-Uygulama ilk çalışmada otomatik, bilinen bir parola oluşturmaz. Bu yüzden şu an paylaşılabilecek sabit bir giriş parolası yoktur. İlk hesabın kullanıcı adını ve parolasını siz belirleyip User Secrets'a kaydedin. Örnek kullanıcı adı `admin` olabilir; aşağıdaki parolayı güçlü ve benzersiz bir parolayla değiştirin (en az 12 karakter):
+Uygulama bilinen bir varsayılan parola üretmez. İlk yönetici hesabının kullanıcı adı ve güçlü parolası (en az 12 karakter) User Secrets ile yapılandırılır:
 
 ```powershell
 dotnet user-secrets set "InitialUser:Username" "admin" --project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj"
 dotnet user-secrets set "InitialUser:Password" "<kendi-guclu-parolaniz>" --project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj"
 ```
 
-İlk kullanıcı, veritabanındaki `InitialUsers` tablosu boşken, bu secret değerleriyle **ilk başarılı login isteğinde** oluşturulur. Kullanıcı parolası ASP.NET Core `PasswordHasher` ile hash'lenerek saklanır; düz metin parola veritabanına yazılmaz. Sonraki login'lerde veritabanındaki hash doğrulanır. İlk kullanıcı oluşturulduktan sonra User Secrets'taki başlangıç parolasını değiştirmek mevcut kullanıcının parolasını değiştirmez.
+Veritabanında henüz kullanıcı yoksa bu bilgilerle yapılan ilk başarılı `POST /api/auth/login` hesabı oluşturur ve yönetici rolü verir. Daha önceki tek başlangıç kullanıcısını bulunan veritabanları için migration `IsAdmin=true` atar; migration'ı uygulayın:
 
-`InitialUser:Username` ve `InitialUser:Password` yalnızca ilk kullanıcıyı kurmak için kullanılır. Kullanıcı tablosu boş değilse farklı bir kullanıcı yaratma/registration akışı yoktur. Parolanızı unutursanız veritabanı ve kimlik yönetimi için kontrollü bir yönetici/reset prosedürü gerekir.
+```powershell
+dotnet ef database update --project ".\src\YUIBackend.Infrastructure\YUIBackend.Infrastructure.csproj" --startup-project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj"
+```
 
-### Login isteği
+Parola ASP.NET Core `PasswordHasher` ile hash'lenir. Başlangıç secret'ı yalnızca ilk yönetici hesabını kurar; mevcut kullanıcının parolasını değiştirmez ve veritabanına başka kullanıcı eklemez. Gerçek parolayı README'ye, kaynak koda veya Git'e eklemeyin.
 
-API çalışırken `POST /api/auth/login` adresine JSON gönderin. Windows PowerShell örneği:
+### Müşteri hesabı kaydı ve giriş
+
+Müşteriler anonim `POST /api/auth/register` ile kendi müşteri profillerini ve giriş kullanıcılarını birlikte oluşturabilir. Username (harf duyarsız) ve e-posta tekrarları reddedilir. Örnek:
+
+```powershell
+$body = @{
+    username = "ada.yilmaz"
+    password = "<en-az-12-karakter-guclu-parola>"
+    firstName = "Ada"
+    lastName = "Yilmaz"
+    email = "ada@example.com"
+    phoneNumber = "+90 555 000 00 00"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://localhost:5270/api/auth/register" `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+Kayıt yanıtı müşteri kimliğini ve kullanıcı adını verir. Ardından `POST /api/auth/login` ile token alın:
+
+```powershell
+$body = @{ username = "ada.yilmaz"; password = "<kaydolurken-belirlediginiz-parola>" } | ConvertTo-Json
+$login = Invoke-RestMethod -Method Post -Uri "http://localhost:5270/api/auth/login" -ContentType "application/json" -Body $body
+$headers = @{ Authorization = "Bearer $($login.accessToken)" }
+Invoke-RestMethod -Uri "http://localhost:5270/api/accounts" -Headers $headers
+```
+
+Token bir saat geçerlidir ve `Bearer` şemasıyla gönderilir. Aktif olmayan kullanıcılar veya müşteriler giriş yapamaz. Müşteri rolündeki kullanıcılar yalnız kendi müşteri profilini, hesaplarını ve bu hesaplarla ilişkili finans geçmişi/raporlarını görebilir; müşteri hesap oluştururken `customerId` sunucu tarafından oturumdan alınır. Para transferinde hedef başka müşterinin hesabı olabilir, ancak kaynak hesabın sahibi olmak gerekir. Müşteri ve ürün yönetimi yazma uçları yönetici rolüne ayrılmıştır. Hesap sahipliği her istekte token'daki müşteri kimliğine güvenmek yerine veritabanından doğrulanır.
+
+Korunan uçlarda token'ı gizli tutun; parolayla aynı şekilde paylaşmayın veya loglamayın. Hatalı kullanıcı/parola `401 Unauthorized`, yinelenen username/e-posta `409 Conflict`, eksik ilk yönetici yapılandırması `503 Service Unavailable` döndürür. Swagger'da **Authorize** düğmesinde `Bearer <token>` kullanın.
+
+### Yönetici girişi için PowerShell örneği
+
+Yönetici hesabıyla `POST /api/auth/login` adresine JSON gönderin:
 
 ```powershell
 $body = @{
@@ -165,21 +204,22 @@ User Secrets yalnızca yerel geliştirme içindir. Başka makine/deployment orta
 
 ## API uçları
 
-Controller uçları JWT ister; istisnalar login ve health endpoint'idir. Aşağıdaki uçlarda `/api` öneki kullanılır.
+Controller uçları JWT ister; istisnalar kayıt, login ve health endpoint'leridir. Ürün uçları yalnızca yönetici rolüne açıktır. Aşağıdaki uçlarda `/api` öneki kullanılır.
 
 | Method | Endpoint | Açıklama |
 |---|---|---|
-| `POST` | `/api/auth/login` | İlk kullanıcı ayarlandıysa ilk hesabı kurar veya kullanıcıyı doğrular; JWT döndürür. Tek anonim controller endpoint'idir. |
-| `GET` | `/api/customers?pageNumber=1&pageSize=20` | Müşteri sayfalı listesi |
+| `POST` | `/api/auth/register` | Anonim müşteri kaydı; müşteri ve giriş hesabını atomik oluşturur. |
+| `POST` | `/api/auth/login` | İlk yönetici hesabını yapılandırılmış bilgilerle kurar veya kullanıcıyı doğrular; JWT döndürür. |
+| `GET` | `/api/customers?pageNumber=1&pageSize=20` | Yönetici tüm müşterileri, müşteri yalnız kendi profilini listeler |
 | `GET` | `/api/customers/{id}` | Müşteri detayı |
-| `POST` | `/api/customers` | Müşteri oluşturur |
-| `PUT` | `/api/customers/{id}` | Müşteri bilgilerini günceller |
-| `DELETE` | `/api/customers/{id}` | Müşteriyi soft delete eder; hesabı olan müşteri silinemez. |
-| `GET` | `/api/accounts?pageNumber=1&pageSize=20` | Hesap sayfalı listesi |
-| `GET` | `/api/accounts/{id}` | Hesap detayı ve bakiye |
-| `POST` | `/api/accounts` | Müşteriye hesap açar |
-| `PUT` | `/api/accounts/{id}` | Hesap durumunu (`Active`, `Inactive`, `Closed`) günceller |
-| `DELETE` | `/api/accounts/{id}` | Bakiyesi sıfır olan hesabı soft delete eder. |
+| `POST` | `/api/customers` | (Yönetici) Müşteri oluşturur |
+| `PUT` | `/api/customers/{id}` | Müşteri kendi profil bilgilerini, yönetici tüm müşteri bilgilerini günceller; müşteri kendi aktiflik durumunu değiştiremez |
+| `DELETE` | `/api/customers/{id}` | (Yönetici) Müşteriyi soft delete eder; hesabı olan müşteri silinemez. |
+| `GET` | `/api/accounts?pageNumber=1&pageSize=20` | Yönetici tüm hesapları, müşteri yalnız kendi hesaplarını listeler |
+| `GET` | `/api/accounts/{id}` | Sahip olunan hesap detayı ve bakiye |
+| `POST` | `/api/accounts` | Hesap açar; müşteri sahipliği oturumdan alınır |
+| `PUT` | `/api/accounts/{id}` | Sahip olunan hesabın durumunu (`Active`, `Inactive`, `Closed`) günceller |
+| `DELETE` | `/api/accounts/{id}` | Sahip olunan, bakiyesi sıfır hesabı soft delete eder. |
 | `POST` | `/api/financialtransactions/deposit` | Hesaba para yatırır; `Idempotency-Key` header'ı zorunludur |
 | `POST` | `/api/financialtransactions/withdraw` | Hesaptan para çeker; `Idempotency-Key` header'ı zorunludur |
 | `POST` | `/api/financialtransactions/transfer` | Hesaplar arasında transfer yapar; `Idempotency-Key` header'ı zorunludur |
@@ -187,21 +227,33 @@ Controller uçları JWT ister; istisnalar login ve health endpoint'idir. Aşağ�
 | `GET` | `/api/financialtransactions/{id}` | Finansal işlem detayı |
 | `GET` | `/api/financialtransactions/account/{accountId}` | Hesap bazlı, filtreli ve sayfalı finansal işlem geçmişi |
 | `GET` | `/api/financialtransactions/reports` | Günlük, haftalık veya aylık işlem raporu; hesap filtresi isteğe bağlı |
-| `GET` | `/api/products?pageNumber=1&pageSize=20` | Ürün sayfalı listesi |
-| `GET` | `/api/products/{id}` | Ürün detayı |
-| `POST` | `/api/products` | Ürün oluşturur |
-| `PUT` | `/api/products/{id}` | Ürünü günceller |
-| `DELETE` | `/api/products/{id}` | Ürünü soft delete eder. |
+| `GET` | `/api/products?pageNumber=1&pageSize=20` | (Yönetici) Ürün sayfalı listesi |
+| `GET` | `/api/products/{id}` | (Yönetici) Ürün detayı |
+| `POST` | `/api/products` | (Yönetici) Ürün oluşturur |
+| `PUT` | `/api/products/{id}` | (Yönetici) Ürünü günceller |
+| `DELETE` | `/api/products/{id}` | (Yönetici) Ürünü soft delete eder. |
 | `GET` | `/health` | Servis health-check özeti; JWT istemez. |
 | `GET` | `/metrics` | Prometheus metrics çıktısı; dış erişimi production'da ağ/policy ile sınırlayın. |
 
-Müşteri oluşturma JSON örneği:
+Yönetici müşteri oluşturma JSON örneği:
 
 ```json
 {
   "firstName": "Ada",
   "lastName": "Yilmaz",
   "email": "ada@example.com",
+  "phoneNumber": "+90 555 000 00 00"
+}
+```
+
+Müşteri kendi profilini `PUT /api/customers/{customerId}` ile güncelleyebilir. Gövdedeki `id` route ile aynı olmalı; müşteri `isActive` alanı gönderse bile bu alan dikkate alınmaz. Yalnız yönetici müşteri aktifliğini değiştirebilir.
+
+```json
+{
+  "id": "<customer-guid>",
+  "firstName": "Ada",
+  "lastName": "Yilmaz",
+  "email": "ada.yilmaz@example.com",
   "phoneNumber": "+90 555 000 00 00"
 }
 ```
@@ -215,6 +267,8 @@ Hesap oluşturma JSON örneği:
   "currencyCode": "TRY"
 }
 ```
+
+Müşteri hesabı açarken `customerId` sunucu tarafından oturumdaki müşteri kimliğiyle değiştirilir; yönetici bu alanda müşteri seçebilir. Bir müşteri birden fazla hesap açabilir.
 
 Hesap güncelleme JSON örneği:
 
@@ -371,17 +425,56 @@ Versiyonlar proje dosyalarındaki doğrudan `PackageReference` değerleridir. Tr
 
 ## Testler
 
-Testleri çalıştırmak için:
+Unit testlerini çalıştırmak için:
 
 ```powershell
 dotnet test ".\tests\YUIBackend.Tests\YUIBackend.Tests.csproj"
 ```
 
-Test projesi handler testleri ile finansal komut doğrulamaları/idempotency payload kontrollerini içerir. Yeni testleri dahil etmek için bu komutu çalıştırın.
+SQL Server entegrasyon testleri aynı test projesindedir; transaction, idempotency, yetersiz bakiye, raporlama ve eşzamanlı çekim davranışlarını gerçek SQL Server üzerinde doğrular. Test koleksiyonu benzersiz bir geçici veritabanı oluşturup migration'ları uygular ve test bitince siler. Test kullanıcısının `master` veritabanında veritabanı oluşturup silme izni olan bir SQL Server bağlantısı gereklidir. Bağlantı dizesini `YUIBACKEND_TEST_SQLSERVER` ortam değişkenine verin; testler bu değişken yoksa `Skipped` olarak raporlanır.
 
-## Docker durumu
+```powershell
+$env:YUIBACKEND_TEST_SQLSERVER = "Server=localhost,1433;Database=master;User Id=sa;Password=<test-sql-password>;Encrypt=True;TrustServerCertificate=True"
+dotnet test ".\tests\YUIBackend.Tests\YUIBackend.Tests.csproj"
+Remove-Item Env:YUIBACKEND_TEST_SQLSERVER
+```
 
-Depoda `Dockerfile` ve `docker-compose.yml` vardır; ancak mevcut dosyalardaki proje yolları/eski proje adları (`MyProject.*`) ve Dockerfile'ın .NET 9 taban imajları, güncel .NET 10 `YUIBackend.*` proje yapısıyla eşleşmiyor. Compose dosyasında ayrıca örnek/development amaçlı sabit servis ayarları bulunur. Bu nedenle Docker yapılandırmasını production için hazır veya doğrulanmış kabul etmeyin; kullanmadan önce Dockerfile/Compose yollarını, .NET imajlarını, secret yönetimini ve servis health/dependency ayarlarını güncelleyin. SQL Server parolası veya başka gerçek sırları bu dosyalara yazmayın.
+Unit testler çevrimdışı çalışır. SQL entegrasyon testlerinde kullanacağınız SQL Server hesabı yalnızca izole geliştirme/test sunucusunda veritabanı oluşturma yetkisine sahip olmalıdır.
+
+## Docker Compose
+
+Docker Desktop/Docker Engine ve Compose v2 gereklidir. Compose, SQL Server 2022, Redis, RabbitMQ ve .NET 10 API'yi başlatır. SQL/JWT/ilk kullanıcı sırları zorunlu environment değişkenleridir; repoda varsayılan parola bulunmaz:
+
+```powershell
+$env:MSSQL_SA_PASSWORD = "<guclu-ve-test-ortamina-ozel-sql-parolasi>"
+$jwtBytes = New-Object byte[] 48
+$jwtRng = [Security.Cryptography.RandomNumberGenerator]::Create()
+$jwtRng.GetBytes($jwtBytes)
+$env:JWT_SECRET_KEY = [Convert]::ToBase64String($jwtBytes)
+$jwtRng.Dispose()
+Remove-Variable jwtBytes, jwtRng
+$env:INITIAL_USER_USERNAME = "admin"
+$env:INITIAL_USER_PASSWORD = "<guclu-ve-test-ortamina-ozel-ilk-kullanici-parolasi>"
+$env:GRAFANA_ADMIN_PASSWORD = "<guclu-ve-test-ortamina-ozel-grafana-parolasi>"
+$env:Jwt__Issuer = "YUIBackend"
+$env:Jwt__Audience = "YUIBackend.Client"
+$env:Jwt__SecretKey = $env:JWT_SECRET_KEY
+docker compose up --build -d sqlserver redis rabbitmq
+```
+
+SQL Server hazır olduktan sonra API veritabanını ve migration'ları oluşturun. Aşağıdaki `sqlcmd` komutu veritabanını oluşturur; EF komutu şemayı migration'larla günceller:
+
+```powershell
+docker compose exec sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $env:MSSQL_SA_PASSWORD -C -Q "IF DB_ID(N'YUIBackend') IS NULL CREATE DATABASE [YUIBackend]"
+$env:ConnectionStrings__SqlServer = "Server=localhost,1433;Database=YUIBackend;User Id=sa;Password=$env:MSSQL_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True"
+$env:ConnectionStrings__Redis = "localhost:6379,abortConnect=false"
+$env:ConnectionStrings__RabbitMQ = "rabbitmq://localhost"
+dotnet ef database update --project ".\src\YUIBackend.Infrastructure\YUIBackend.Infrastructure.csproj" --startup-project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj" --context AppDbContext
+
+docker compose up --build -d api
+```
+
+Swagger: <http://localhost:5270/swagger>. SQL Server, Redis ve RabbitMQ health-check'leri sağlıklı olmadan API başlatılmaz. Migration uygulama başlangıcında otomatik çalışmaz. İsteğe bağlı Prometheus/Grafana'yı `observability` profili ve ayrı bir `GRAFANA_ADMIN_PASSWORD` ile başlatabilirsiniz: `docker compose --profile observability up -d`. Bu Compose yapılandırması yerel geliştirme içindir; production ortamında secret manager, TLS, ağ erişim politikası, yedekleme ve imaj sürüm sabitlemesi ayrıca sağlanmalıdır.
 
 ## Bilinen notlar
 

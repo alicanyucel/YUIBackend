@@ -27,7 +27,8 @@ public sealed record GetFinancialTransactionsQuery(
     decimal? MaximumAmount = null,
     int PageNumber = 1,
     int PageSize = 20,
-    bool Descending = true) : IQuery<PagedResult<FinancialTransactionDto>>;
+    bool Descending = true,
+    Guid? CustomerId = null) : IQuery<PagedResult<FinancialTransactionDto>>;
 
 public sealed class GetFinancialTransactionsQueryValidator : AbstractValidator<GetFinancialTransactionsQuery>
 {
@@ -67,7 +68,8 @@ internal sealed class GetFinancialTransactionsQueryHandler(IFinancialTransaction
             request.Type is null ? null : FinancialTransactionType.FromName(request.Type),
             request.MinimumAmount,
             request.MaximumAmount,
-            request.Descending);
+            request.Descending,
+            request.CustomerId);
         var page = await repository.GetFilteredPageAsync(
             filter, request.PageNumber, request.PageSize, cancellationToken);
         return Result.Success(new PagedResult<FinancialTransactionDto>(page.Items.Select(ToDto).ToList(),
@@ -158,7 +160,8 @@ public sealed record GetFinancialReportQuery(
     Guid? AccountId,
     DateTime FromUtc,
     DateTime ToUtc,
-    string Period = "Daily") : IQuery<FinancialReport>;
+    string Period = "Daily",
+    Guid? CustomerId = null) : IQuery<FinancialReport>;
 
 public sealed class GetFinancialReportQueryValidator : AbstractValidator<GetFinancialReportQuery>
 {
@@ -187,7 +190,7 @@ internal sealed class GetFinancialReportQueryHandler(
             return Result.Failure<FinancialReport>(Error.NotFound(nameof(Account)));
 
         var period = Enum.Parse<FinancialReportPeriodKind>(request.Period, true);
-        var filter = new FinancialReportFilter(request.AccountId, request.FromUtc, request.ToUtc);
+        var filter = new FinancialReportFilter(request.AccountId, request.FromUtc, request.ToUtc, request.CustomerId);
         return Result.Success(await transactionRepository.GetReportAsync(filter, period, cancellationToken));
     }
 }

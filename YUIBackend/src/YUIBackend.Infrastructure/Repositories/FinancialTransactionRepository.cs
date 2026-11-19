@@ -81,6 +81,12 @@ internal sealed class FinancialTransactionRepository(AppDbContext context)
             query = query.Where(transaction =>
                 transaction.SourceAccountId == accountId || transaction.DestinationAccountId == accountId);
         }
+        if (filter.CustomerId is Guid customerId)
+        {
+            query = query.Where(transaction =>
+                transaction.SourceAccount != null && transaction.SourceAccount.CustomerId == customerId ||
+                transaction.DestinationAccount != null && transaction.DestinationAccount.CustomerId == customerId);
+        }
 
         var epoch = DateTime.UnixEpoch;
         List<RawReportPeriod> rawPeriods;
@@ -88,7 +94,7 @@ internal sealed class FinancialTransactionRepository(AppDbContext context)
         {
             rawPeriods = await query.GroupBy(transaction =>
                     EF.Functions.DateDiffDay(epoch, transaction.OccurredAt))
-                .Select(CreateReportProjection(filter.AccountId))
+                .Select(CreateReportProjection(filter.AccountId, filter.CustomerId))
                 .ToListAsync(cancellationToken);
         }
         else if (periodKind == FinancialReportPeriodKind.Weekly)
@@ -96,7 +102,7 @@ internal sealed class FinancialTransactionRepository(AppDbContext context)
             var mondayEpoch = new DateTime(1970, 1, 5, 0, 0, 0, DateTimeKind.Utc);
             rawPeriods = await query.GroupBy(transaction =>
                     EF.Functions.DateDiffDay(mondayEpoch, transaction.OccurredAt) / 7)
-                .Select(CreateReportProjection(filter.AccountId))
+                .Select(CreateReportProjection(filter.AccountId, filter.CustomerId))
                 .ToListAsync(cancellationToken);
             epoch = mondayEpoch;
         }
@@ -104,7 +110,7 @@ internal sealed class FinancialTransactionRepository(AppDbContext context)
         {
             rawPeriods = await query.GroupBy(transaction =>
                     EF.Functions.DateDiffMonth(epoch, transaction.OccurredAt))
-                .Select(CreateReportProjection(filter.AccountId))
+                .Select(CreateReportProjection(filter.AccountId, filter.CustomerId))
                 .ToListAsync(cancellationToken);
         }
 
@@ -134,6 +140,10 @@ internal sealed class FinancialTransactionRepository(AppDbContext context)
         if (filter.AccountId is Guid accountId)
             query = query.Where(transaction => transaction.SourceAccountId == accountId ||
                 transaction.DestinationAccountId == accountId);
+        if (filter.CustomerId is Guid customerId)
+            query = query.Where(transaction =>
+                transaction.SourceAccount != null && transaction.SourceAccount.CustomerId == customerId ||
+                transaction.DestinationAccount != null && transaction.DestinationAccount.CustomerId == customerId);
         if (filter.FromUtc is DateTime fromUtc)
             query = query.Where(transaction => transaction.OccurredAt >= fromUtc);
         if (filter.ToUtc is DateTime toUtc)
@@ -148,16 +158,20 @@ internal sealed class FinancialTransactionRepository(AppDbContext context)
     }
 
     private static Expression<Func<IGrouping<int, FinancialTransaction>, RawReportPeriod>>
-        CreateReportProjection(Guid? accountId)
+        CreateReportProjection(Guid? accountId, Guid? customerId)
         => group => new RawReportPeriod(
             group.Key,
             group.Sum(transaction => transaction.Status == FinancialTransactionStatus.Succeeded &&
-                    (accountId == null ? transaction.DestinationAccountId != null :
-                        transaction.DestinationAccountId == accountId)
+                    (accountId != null ? transaction.DestinationAccountId == accountId :
+                        customerId != null ? transaction.DestinationAccount != null &&
+                            transaction.DestinationAccount.CustomerId == customerId :
+                            transaction.DestinationAccountId != null)
                 ? (decimal?)transaction.Amount : null) ?? 0m,
             group.Sum(transaction => transaction.Status == FinancialTransactionStatus.Succeeded &&
-                    (accountId == null ? transaction.SourceAccountId != null :
-                        transaction.SourceAccountId == accountId)
+                    (accountId != null ? transaction.SourceAccountId == accountId :
+                        customerId != null ? transaction.SourceAccount != null &&
+                            transaction.SourceAccount.CustomerId == customerId :
+                            transaction.SourceAccountId != null)
                 ? (decimal?)transaction.Amount : null) ?? 0m,
             group.Count(transaction => transaction.Status == FinancialTransactionStatus.Succeeded),
             group.Count(transaction => transaction.Status == FinancialTransactionStatus.Failed));

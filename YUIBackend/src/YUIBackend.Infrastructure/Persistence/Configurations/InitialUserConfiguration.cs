@@ -21,6 +21,15 @@ internal sealed class InitialUserConfiguration : IEntityTypeConfiguration<Initia
         builder.HasIndex(user => user.NormalizedUsername)
             .IsUnique();
 
+        builder.HasIndex(user => user.CustomerId)
+            .IsUnique()
+            .HasFilter("[CustomerId] IS NOT NULL");
+
+        builder.HasOne<Customer>()
+            .WithOne()
+            .HasForeignKey<InitialUser>(user => user.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(user => user.PasswordHash)
             .IsRequired()
             .HasMaxLength(500);

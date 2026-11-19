@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MyProject.Application.Features.FinancialTransactions;
+using MyProject.WebAPI.Authorization;
 
 namespace MyProject.WebAPI.Controllers;
 
@@ -14,7 +15,7 @@ public sealed record TransferMoneyRequest(
 
 [ApiController]
 [Route("api/[controller]")]
-public sealed class FinancialTransactionsController(ISender sender) : ControllerBase
+public sealed class FinancialTransactionsController(ISender sender, ICustomerResourceAccess resourceAccess) : ControllerBase
 {
     [HttpPost("deposit")]
     public async Task<IActionResult> Deposit(
@@ -22,6 +23,9 @@ public sealed class FinancialTransactionsController(ISender sender) : Controller
         [FromBody] AccountMoneyRequest request,
         CancellationToken cancellationToken)
     {
+        if (!await resourceAccess.CanAccessAccountAsync(User, request.AccountId, cancellationToken))
+            return NotFound();
+
         var result = await sender.Send(new DepositMoneyCommand(
             request.AccountId,
             request.Amount,
@@ -36,6 +40,9 @@ public sealed class FinancialTransactionsController(ISender sender) : Controller
         [FromBody] AccountMoneyRequest request,
         CancellationToken cancellationToken)
     {
+        if (!await resourceAccess.CanAccessAccountAsync(User, request.AccountId, cancellationToken))
+            return NotFound();
+
         var result = await sender.Send(new WithdrawMoneyCommand(
             request.AccountId,
             request.Amount,
@@ -50,6 +57,9 @@ public sealed class FinancialTransactionsController(ISender sender) : Controller
         [FromBody] TransferMoneyRequest request,
         CancellationToken cancellationToken)
     {
+        if (!await resourceAccess.CanAccessAccountAsync(User, request.SourceAccountId, cancellationToken))
+            return NotFound();
+
         var result = await sender.Send(new TransferMoneyCommand(
             request.SourceAccountId,
             request.DestinationAccountId,
@@ -72,9 +82,17 @@ public sealed class FinancialTransactionsController(ISender sender) : Controller
         [FromQuery] bool descending = true,
         CancellationToken cancellationToken = default)
     {
+        var isAdmin = await resourceAccess.IsAdministratorAsync(User, cancellationToken);
+        var customerId = isAdmin ? null : await resourceAccess.GetCustomerIdAsync(User, cancellationToken);
+        if (!isAdmin && customerId is null)
+            return Forbid();
+        if (accountId is Guid requestedAccountId &&
+            !await resourceAccess.CanAccessAccountAsync(User, requestedAccountId, cancellationToken))
+            return NotFound();
+
         var query = new GetFinancialTransactionsQuery(
             accountId, fromUtc, toUtc, type, minimumAmount, maximumAmount,
-            pageNumber, pageSize, descending);
+            pageNumber, pageSize, descending, customerId);
         var result = await sender.Send(query, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
@@ -82,6 +100,9 @@ public sealed class FinancialTransactionsController(ISender sender) : Controller
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
+        if (!await resourceAccess.CanAccessTransactionAsync(User, id, cancellationToken))
+            return NotFound();
+
         var result = await sender.Send(new GetFinancialTransactionByIdQuery(id), cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : NotFound(result.Error);
     }
@@ -99,6 +120,9 @@ public sealed class FinancialTransactionsController(ISender sender) : Controller
         [FromQuery] bool descending = true,
         CancellationToken cancellationToken = default)
     {
+        if (!await resourceAccess.CanAccessAccountAsync(User, accountId, cancellationToken))
+            return NotFound();
+
         var query = new GetAccountTransactionHistoryQuery(
             accountId, fromUtc, toUtc, type, minimumAmount, maximumAmount,
             pageNumber, pageSize, descending);
@@ -121,8 +145,16 @@ public sealed class FinancialTransactionsController(ISender sender) : Controller
         if (fromUtc is null || toUtc is null)
             return BadRequest("fromUtc and toUtc are required and must be UTC timestamps.");
 
+        var isAdmin = await resourceAccess.IsAdministratorAsync(User, cancellationToken);
+        var customerId = isAdmin ? null : await resourceAccess.GetCustomerIdAsync(User, cancellationToken);
+        if (!isAdmin && customerId is null)
+            return Forbid();
+        if (accountId is Guid requestedAccountId &&
+            !await resourceAccess.CanAccessAccountAsync(User, requestedAccountId, cancellationToken))
+            return NotFound();
+
         var result = await sender.Send(
-            new GetFinancialReportQuery(accountId, fromUtc.Value, toUtc.Value, period), cancellationToken);
+            new GetFinancialReportQuery(accountId, fromUtc.Value, toUtc.Value, period, customerId), cancellationToken);
         if (result.IsSuccess)
             return Ok(result.Value);
         return result.Error.Code.EndsWith(".NotFound", StringComparison.Ordinal)

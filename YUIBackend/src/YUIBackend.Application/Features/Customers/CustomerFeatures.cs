@@ -15,7 +15,7 @@ public sealed record CustomerDto(
     bool IsActive,
     DateTime CreatedAt);
 
-public sealed record GetCustomersQuery(int PageNumber = 1, int PageSize = 20)
+public sealed record GetCustomersQuery(int PageNumber = 1, int PageSize = 20, Guid? CustomerId = null)
     : IQuery<PagedResult<CustomerDto>>;
 
 public sealed class GetCustomersQueryValidator : AbstractValidator<GetCustomersQuery>
@@ -34,7 +34,9 @@ internal sealed class GetCustomersQueryHandler(ICustomerRepository repository)
         GetCustomersQuery request,
         CancellationToken cancellationToken)
     {
-        var page = await repository.GetPageAsync(request.PageNumber, request.PageSize, cancellationToken);
+        var page = request.CustomerId is Guid customerId
+            ? await repository.GetPageByIdAsync(customerId, request.PageNumber, request.PageSize, cancellationToken)
+            : await repository.GetPageAsync(request.PageNumber, request.PageSize, cancellationToken);
         var result = new PagedResult<CustomerDto>(page.Items.Select(ToDto).ToList(),
             page.TotalCount, page.PageNumber, page.PageSize);
         return Result.Success(result);
@@ -104,7 +106,7 @@ public sealed record UpdateCustomerCommand(
     string LastName,
     string Email,
     string? PhoneNumber,
-    bool IsActive) : ICommand;
+    bool? IsActive = null) : ICommand;
 
 public sealed class UpdateCustomerCommandValidator : AbstractValidator<UpdateCustomerCommand>
 {
@@ -137,7 +139,8 @@ internal sealed class UpdateCustomerCommandHandler(
         customer.LastName = request.LastName.Trim();
         customer.Email = email;
         customer.PhoneNumber = request.PhoneNumber?.Trim();
-        customer.IsActive = request.IsActive;
+        if (request.IsActive is bool isActive)
+            customer.IsActive = isActive;
         customer.MarkUpdated();
         repository.Update(customer);
         await unitOfWork.SaveChangesAsync(cancellationToken);

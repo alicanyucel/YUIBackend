@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 using MyProject.Domain.Repositories;
 using MyProject.Infrastructure.Persistence;
@@ -14,4 +15,17 @@ internal sealed class AccountRepository(AppDbContext context)
     public async Task<IEnumerable<Account>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default)
         => await DbSet.Where(account => account.CustomerId == customerId)
             .ToListAsync(cancellationToken);
+
+    public async Task<PagedResult<Account>> GetPageByCustomerIdAsync(
+        Guid customerId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = DbSet.AsNoTracking().Where(account => account.CustomerId == customerId);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query.OrderBy(account => account.CreatedAt).ThenBy(account => account.Id)
+            .Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new PagedResult<Account>(items, totalCount, pageNumber, pageSize);
+    }
 }

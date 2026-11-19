@@ -8,6 +8,7 @@ using Microsoft.OpenApi;
 using MyProject.Application;
 using MyProject.Domain.Entities;
 using MyProject.Infrastructure;
+using MyProject.WebAPI.Authorization;
 using MyProject.WebAPI.Middleware;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -34,6 +35,7 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IPasswordHasher<InitialUser>, PasswordHasher<InitialUser>>();
+builder.Services.AddScoped<ICustomerResourceAccess, CustomerResourceAccess>();
 
 // ── Controllers + OpenAPI ─────────────────────────────────────────────────
 builder.Services.AddControllers();
@@ -91,6 +93,7 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
+    options.AddPolicy("Administrator", policy => policy.RequireRole("Admin"));
 });
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────

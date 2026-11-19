@@ -9,7 +9,8 @@ public sealed record FinancialTransactionFilter(
     FinancialTransactionType? Type,
     decimal? MinimumAmount,
     decimal? MaximumAmount,
-    bool Descending = true);
+    bool Descending = true,
+    Guid? CustomerId = null);
 
 public enum FinancialReportPeriodKind
 {
@@ -21,7 +22,8 @@ public enum FinancialReportPeriodKind
 public sealed record FinancialReportFilter(
     Guid? AccountId,
     DateTime FromUtc,
-    DateTime ToUtc);
+    DateTime ToUtc,
+    Guid? CustomerId = null);
 
 public sealed record FinancialReportPeriod(
     DateTime PeriodStartUtc,

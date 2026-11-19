@@ -23,6 +23,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\YUIBackend.Application\YUIBackend.Application.csproj" />
     <ProjectReference Include="..\..\src\YUIBackend.Domain\YUIBackend.Domain.csproj" />
+    <ProjectReference Include="..\..\src\YUIBackend.Infrastructure\YUIBackend.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj" />
   </ItemGroup>
 
 </Project>

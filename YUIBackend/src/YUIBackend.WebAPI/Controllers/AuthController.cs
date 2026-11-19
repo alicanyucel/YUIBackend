@@ -19,6 +19,16 @@ public sealed record LoginRequest(
 
 public sealed record LoginResponse(string AccessToken, string TokenType, DateTime ExpiresAtUtc);
 
+public sealed record RegisterCustomerRequest(
+    [Required, MaxLength(100)] string Username,
+    [Required, MinLength(12), MaxLength(256)] string Password,
+    [Required, MaxLength(100)] string FirstName,
+    [Required, MaxLength(100)] string LastName,
+    [Required, EmailAddress, MaxLength(254)] string Email,
+    [MaxLength(30)] string? PhoneNumber);
+
+public sealed record RegisterCustomerResponse(Guid CustomerId, string Username);
+
 [ApiController]
 [Route("api/[controller]")]
 public sealed class AuthController(
@@ -57,6 +67,10 @@ public sealed class AuthController(
         if (verification == PasswordVerificationResult.Failed)
             return Unauthorized();
 
+        if (user.CustomerId is Guid customerId &&
+            !await dbContext.Customers.AnyAsync(customer => customer.Id == customerId && customer.IsActive, cancellationToken))
+            return Unauthorized();
+
         if (verification == PasswordVerificationResult.SuccessRehashNeeded)
         {
             user.UpdatePasswordHash(passwordHasher.HashPassword(user, request.Password));
@@ -64,6 +78,45 @@ public sealed class AuthController(
         }
 
         return Ok(CreateToken(user));
+    }
+
+    [AllowAnonymous]
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(
+        [FromBody] RegisterCustomerRequest request,
+        CancellationToken cancellationToken)
+    {
+        var username = request.Username.Trim();
+        var normalizedUsername = NormalizeUsername(username);
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable, cancellationToken);
+
+        if (await dbContext.InitialUsers.IgnoreQueryFilters().AnyAsync(
+                user => user.NormalizedUsername == normalizedUsername, cancellationToken) ||
+            await dbContext.Customers.IgnoreQueryFilters().AnyAsync(
+                customer => customer.Email == email, cancellationToken))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Username or email is already in use."
+            });
+        }
+
+        var customer = new Customer(
+            request.FirstName.Trim(), request.LastName.Trim(), email, request.PhoneNumber?.Trim());
+        var user = new InitialUser(username, normalizedUsername, string.Empty, customer.Id);
+        user.UpdatePasswordHash(passwordHasher.HashPassword(user, request.Password));
+
+        dbContext.Customers.Add(customer);
+        dbContext.InitialUsers.Add(user);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return Created($"/api/customers/{customer.Id}", new RegisterCustomerResponse(customer.Id, user.Username));
     }
 
     private async Task<IActionResult?> TryCreateInitialUserAsync(
@@ -110,10 +163,9 @@ public sealed class AuthController(
         }
 
         var normalizedBootstrapUsername = NormalizeUsername(bootstrapUsername);
-        var hash = passwordHasher.HashPassword(
-            new InitialUser(bootstrapUsername, normalizedBootstrapUsername, string.Empty),
-            bootstrapPassword);
-        var initialUser = new InitialUser(bootstrapUsername, normalizedBootstrapUsername, hash);
+        var initialUser = new InitialUser(
+            bootstrapUsername, normalizedBootstrapUsername, string.Empty, isAdmin: true);
+        initialUser.UpdatePasswordHash(passwordHasher.HashPassword(initialUser, bootstrapPassword));
         dbContext.Add(initialUser);
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -137,8 +189,11 @@ public sealed class AuthController(
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "Customer"),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+        if (user.CustomerId is Guid customerId)
+            claims = [.. claims, new Claim("customer_id", customerId.ToString())];
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var token = new JwtSecurityToken(issuer, audience, claims, expires: expiresAt, signingCredentials: credentials);

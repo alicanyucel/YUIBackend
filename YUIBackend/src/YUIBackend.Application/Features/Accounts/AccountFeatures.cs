@@ -15,7 +15,7 @@ public sealed record AccountDto(
     string Status,
     DateTime CreatedAt);
 
-public sealed record GetAccountsQuery(int PageNumber = 1, int PageSize = 20)
+public sealed record GetAccountsQuery(int PageNumber = 1, int PageSize = 20, Guid? CustomerId = null)
     : IQuery<PagedResult<AccountDto>>;
 
 public sealed class GetAccountsQueryValidator : AbstractValidator<GetAccountsQuery>
@@ -34,7 +34,9 @@ internal sealed class GetAccountsQueryHandler(IAccountRepository repository)
         GetAccountsQuery request,
         CancellationToken cancellationToken)
     {
-        var page = await repository.GetPageAsync(request.PageNumber, request.PageSize, cancellationToken);
+        var page = request.CustomerId is Guid customerId
+            ? await repository.GetPageByCustomerIdAsync(customerId, request.PageNumber, request.PageSize, cancellationToken)
+            : await repository.GetPageAsync(request.PageNumber, request.PageSize, cancellationToken);
         return Result.Success(new PagedResult<AccountDto>(page.Items.Select(ToDto).ToList(),
             page.TotalCount, page.PageNumber, page.PageSize));
     }

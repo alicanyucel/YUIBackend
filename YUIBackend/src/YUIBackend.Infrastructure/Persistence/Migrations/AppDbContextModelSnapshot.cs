@@ -384,10 +384,16 @@ namespace MyProject.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
@@ -416,6 +422,10 @@ namespace MyProject.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CustomerId")
+                        .IsUnique()
+                        .HasFilter("[CustomerId] IS NOT NULL");
 
                     b.HasIndex("NormalizedUsername")
                         .IsUnique();
@@ -506,6 +516,14 @@ namespace MyProject.Infrastructure.Persistence.Migrations
                     b.Navigation("DestinationAccount");
 
                     b.Navigation("SourceAccount");
+                });
+
+            modelBuilder.Entity("MyProject.Domain.Entities.InitialUser", b =>
+                {
+                    b.HasOne("MyProject.Domain.Entities.Customer", null)
+                        .WithOne()
+                        .HasForeignKey("MyProject.Domain.Entities.InitialUser", "CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
