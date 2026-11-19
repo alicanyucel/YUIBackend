@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="YUIBackend/src/YUIBackend.Application/YUIBackend.Application.csproj" />
+  <Project Path="YUIBackend/src/YUIBackend.Domain/YUIBackend.Domain.csproj" />
+  <Project Path="YUIBackend/src/YUIBackend.Infrastructure/YUIBackend.Infrastructure.csproj" />
+  <Project Path="YUIBackend/src/YUIBackend.WebAPI/YUIBackend.WebAPI.csproj" />
+  <Project Path="YUIBackend/tests/YUIBackend.Tests/YUIBackend.Tests.csproj" />
+</Solution>
