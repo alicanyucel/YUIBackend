@@ -50,7 +50,7 @@
 ## Gereksinimler
 
 - .NET 10 SDK
-- SQL Server (bağlantı dizesi User Secrets veya ortam değişkeninde tanımlanmalı)
+- SQL Server 2012 veya üzeri (sayfalı sorgular `OFFSET/FETCH` kullanır; SQL Server 2022 önerilir; bağlantı dizesi User Secrets veya ortam değişkeninde tanımlanmalı)
 - Redis (cache için; erişilemiyorsa API veritabanından devam eder) ve RabbitMQ (transactional outbox bildirimlerinin kuyruklara iletilmesi için)
 - EF CLI: `dotnet tool install --global dotnet-ef` (zaten kuruluysa yeniden yüklemeyin)
 
@@ -113,7 +113,7 @@ dotnet ef database update --project ".\src\YUIBackend.Infrastructure\YUIBackend.
 dotnet run --project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj" --launch-profile http
 ```
 
-HTTP profili `http://localhost:5270` adresini kullanır ve tarayıcıda Swagger'ı açar. Swagger UI: <http://localhost:5270/swagger>. HTTPS profili: <https://localhost:7139/swagger>.
+HTTP profili `http://localhost:5270` adresini kullanır ve tarayıcıda Swagger'ı açar. Swagger UI: <http://localhost:5270/swagger>. HTTPS profili: <https://localhost:7139/swagger>. OpenAPI JSON belgeleri `/swagger/v1/swagger.json` (Swagger UI'nin kullandığı) ve `/openapi/v1.json` adreslerinde Development ortamında anonim olarak sunulur.
 
 Port kullanımda hatası alırsanız, önce çalışan eski API örneğini Visual Studio Stop düğmesi veya `Shift+F5` ile durdurun. Birden fazla API örneği aynı portu aynı anda dinleyemez.
 
