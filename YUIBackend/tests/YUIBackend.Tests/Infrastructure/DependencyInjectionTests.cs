@@ -4,13 +4,14 @@ using Microsoft.Extensions.DependencyInjection;
 using MyProject.Application;
 using MyProject.Application.Abstractions.FinancialOperations;
 using MyProject.Infrastructure;
+using MyProject.Infrastructure.Persistence;
 
 namespace MyProject.Tests.Infrastructure;
 
 public sealed class DependencyInjectionTests
 {
     [Fact]
-    public void AddInfrastructure_ResolvesFinancialOperationServiceWithoutRegisteringNestedRecords()
+    public void AddInfrastructure_ResolvesDbContextWithoutRegisteringNestedRecords()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -30,8 +31,11 @@ public sealed class DependencyInjectionTests
             ValidateScopes = true,
             ValidateOnBuild = true
         });
+        using var scope = provider.CreateScope();
 
-        provider.Should().NotBeNull();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        context.Should().NotBeNull();
         services.Should().ContainSingle(descriptor =>
             descriptor.ServiceType == typeof(IFinancialOperationService));
         services.Should().NotContain(descriptor =>

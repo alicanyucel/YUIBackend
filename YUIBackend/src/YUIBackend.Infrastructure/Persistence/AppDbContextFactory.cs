@@ -54,7 +54,7 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
         var eventBus = new NoOpEventBus();
         var tenantService = new NoOpTenantService();
 
-        return new AppDbContext(optionsBuilder.Options, publisher, eventBus, tenantService);
+        return new AppDbContext(optionsBuilder.Options, publisher, () => eventBus, tenantService);
     }
 }
 

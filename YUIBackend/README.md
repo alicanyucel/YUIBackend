@@ -33,7 +33,7 @@
 - **MassTransit + RabbitMQ:** EF Core transactional outbox/inbox ile ürün ve başarılı/başarısız finansal işlem bildirimleri yayınlanır. Finansal bildirimler veritabanı işlemiyle aynı outbox transaction'ına yazılır ve `financial-transaction-notifications` kuyruğunda tüketilir/loglanır.
 - **Serilog:** Uygulama logları konsol/dosya yapılandırmasına ve SQL Server'daki `dbo.ApplicationLogs` tablosuna yazılır.
 - **OpenTelemetry + Prometheus:** HTTP tracing/metrics ve `/metrics` scrape endpoint'i.
-- **Redis:** Müşteri ve ürün liste/detay GET sonuçları tenant ve filtre anahtarlarıyla cache'lenir. Yazma sonrası kapsam sürümü artırılarak eski girdiler anında geçersizleştirilir; kayıtlar 1 dakika sonra da sona erer. Bakiye ve finansal geçmiş/rapor gibi güncellik gerektiren yanıtlar cache'lenmez.
+- **Redis:** Müşteri ve ürün liste/detay GET sonuçları tenant ve filtre anahtarlarıyla cache'lenir. Yazma sonrası kapsam sürümü artırılarak eski girdiler geçersizleştirilir; kayıtlar 1 dakika sonra sona erer. Bakiye ve finansal geçmiş/rapor gibi güncellik gerektiren yanıtlar cache'lenmez. Redis erişilemezse istekler cache'i atlayıp veritabanından devam eder; cache işlemleri en fazla 500 ms bekler ve Redis health check'i 1 saniyede zaman aşımına uğrar.
 - **Rate limiting:** Controller endpoint'lerinde sabit pencere sınırlaması (100 istek/dakika, 10 istek kuyruk limiti).
 - **Swagger / OpenAPI:** Development ortamında API keşfi ve Bearer token ile deneme.
 
@@ -51,7 +51,7 @@
 
 - .NET 10 SDK
 - SQL Server (bağlantı dizesi User Secrets veya ortam değişkeninde tanımlanmalı)
-- Redis ve RabbitMQ (mevcut API host'u bunları başlangıçta yapılandırır; yerel çalıştırmada ikisi de erişilebilir olmalıdır)
+- Redis (cache için; erişilemiyorsa API veritabanından devam eder) ve RabbitMQ (transactional outbox bildirimlerinin kuyruklara iletilmesi için)
 - EF CLI: `dotnet tool install --global dotnet-ef` (zaten kuruluysa yeniden yüklemeyin)
 
 ## Yerel kurulum
@@ -440,7 +440,6 @@ Versiyonlar proje dosyalarındaki doğrudan `PackageReference` değerleridir. Tr
 | `System.Configuration.ConfigurationManager` | 9.0.4 | ConfigurationManager uyumluluk bağımlılığı |
 | `Swashbuckle.AspNetCore` | 10.1.4 | Swagger/OpenAPI belgesi ve Swagger UI |
 | `Microsoft.EntityFrameworkCore.Design` | 10.0.6 | WebAPI startup projesi üzerinden EF tasarım zamanı |
-| `Microsoft.IdentityModel.Tokens` | 8.17.0 | JWT signing key ve token validation tipleri |
 | `OpenTelemetry.Exporter.Prometheus.AspNetCore` | 1.15.2-beta.1 | Prometheus exporter |
 | `OpenTelemetry.Extensions.Hosting` | 1.15.2 | Host ile OpenTelemetry entegrasyonu |
 | `OpenTelemetry.Instrumentation.AspNetCore` | 1.15.1 | ASP.NET Core tracing/metrics |
@@ -507,6 +506,6 @@ Swagger: <http://localhost:5270/swagger>. SQL Server, Redis ve RabbitMQ health-c
 ## Bilinen notlar
 
 - SQL Server bağlantısı ve geçerli JWT ayarları olmadan DB işlemleri ve login çalışmaz; migration ve API başlatma birbirinden ayrı adımlardır.
-- Redis/RabbitMQ kullanımı ilgili servislerin erişilebilir olmasını gerektirir. Broker kapalıysa mesajlaşma çalışmaz ve bağlantı uyarıları görülebilir.
+- Redis erişilemiyorsa müşteri/ürün okuma sorguları cache olmadan veritabanından yanıtlanır. RabbitMQ kapalıysa outbox'taki mesajlar broker'a iletilemez; bağlantı uyarıları görülebilir.
 - Paket geri yükleme/derleme sırasında bazı doğrudan veya transitif paketlerin NuGet güvenlik uyarıları görülebilir; paketlerin güvenlik bültenleri ayrıca kontrol edilmelidir.
 - SQL Server'a özgü `UPDLOCK`/`ROWLOCK` ipuçları ve rapor gruplama fonksiyonları SQL Server sağlayıcısına bağlıdır; farklı veritabanı sağlayıcısına geçişte uyarlanmalıdır.

@@ -11,7 +11,7 @@ namespace MyProject.Infrastructure.Persistence;
 public sealed class AppDbContext(
     DbContextOptions<AppDbContext> options,
     IPublisher publisher,
-    IEventBus eventBus,
+    Func<IEventBus> eventBusFactory,
     ITenantService tenantService) : DbContext(options), IUnitOfWork
 {
     public DbSet<Product> Products => Set<Product>();
@@ -57,8 +57,12 @@ public sealed class AppDbContext(
 
         var domainEvents = entitiesWithEvents.SelectMany(item => item.Events).ToList();
 
-        foreach (var domainEvent in domainEvents)
-            await eventBus.PublishAsync(domainEvent, domainEvent.GetType(), cancellationToken);
+        if (domainEvents.Count > 0)
+        {
+            var eventBus = eventBusFactory();
+            foreach (var domainEvent in domainEvents)
+                await eventBus.PublishAsync(domainEvent, domainEvent.GetType(), cancellationToken);
+        }
 
         var result = await base.SaveChangesAsync(cancellationToken);
 

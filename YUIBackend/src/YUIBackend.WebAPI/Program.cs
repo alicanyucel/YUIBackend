@@ -86,6 +86,17 @@ builder.Services.AddAuthentication("Bearer")
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
         };
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("JwtBearer");
+                logger.LogWarning(context.Exception, "Bearer token validation failed.");
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization(options =>
@@ -122,7 +133,8 @@ builder.Services.AddHealthChecks()
     .AddRedis(
         builder.Configuration.GetConnectionString("Redis")!,
         name: "redis",
-        tags: ["cache"]);
+        tags: ["cache"],
+        timeout: TimeSpan.FromSeconds(1));
 
 // ── OpenTelemetry ─────────────────────────────────────────────────────────
 builder.Services.AddOpenTelemetry()

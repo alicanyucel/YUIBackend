@@ -33,13 +33,21 @@ public static class DependencyInjection
                 "MyProject.Infrastructure.Cache",
                 "MyProject.Infrastructure.MultiTenancy")
                 .Where(type => !type.IsNested), publicOnly: false)
-            .AsImplementedInterfaces()
-            .WithScopedLifetime());
-        services.AddScoped<IEventBus, EventBus>();
+                    .AsImplementedInterfaces()
+                    .WithScopedLifetime());
+            services.AddScoped<IEventBus, EventBus>();
+            services.AddScoped<Func<IEventBus>>(serviceProvider => serviceProvider.GetRequiredService<IEventBus>);
 
-        services.AddHttpContextAccessor();
+            services.AddHttpContextAccessor();
         services.AddSingleton<IConnectionMultiplexer>(_ =>
-            ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")!));
+        {
+            var redisOptions = ConfigurationOptions.Parse(configuration.GetConnectionString("Redis")!);
+            redisOptions.AbortOnConnectFail = false;
+            redisOptions.ConnectRetry = Math.Min(redisOptions.ConnectRetry, 1);
+            redisOptions.ConnectTimeout = Math.Min(redisOptions.ConnectTimeout, 1_000);
+            redisOptions.AsyncTimeout = Math.Min(redisOptions.AsyncTimeout, 500);
+            return ConnectionMultiplexer.Connect(redisOptions);
+        });
 
         // MassTransit + EF transactional outbox + RabbitMQ + Saga
         services.AddMassTransit(x =>
