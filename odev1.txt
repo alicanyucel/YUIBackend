@@ -1,0 +1,103 @@
+Finansal İşlem ve Para Transferi Sistemi
+Eşzamanlılık
+Veri tutarlılığı
+İşlem geçmişi
+Raporlama
+Müşterilerin hesaplarında bakiye tuttuğu ve birbirlerine para transferi yaptığı, yüksek hacimli ve eşzamanlı kullanıma dayanıklı bir finansal işlem yönetim sistemi.
+
+1. Problem Tanımı
+Bir finans kuruluşu, müşterilerinin hesaplarında bakiye tutabildiği ve birbirlerine para transferi gerçekleştirebildiği bir finansal işlem yönetim sistemi geliştirmek istemektedir.
+
+Sistem, aynı anda çok sayıda kullanıcı tarafından kullanılabilecek ve yüksek hacimli finansal işlemleri destekleyecek şekilde tasarlanmalıdır.
+
+Her müşterinin bir veya birden fazla hesabı bulunabilir. Kullanıcılar hesaplarına para yükleyebilmeli, hesaplarından para çekebilmeli ve diğer kullanıcıların hesaplarına para transferi gerçekleştirebilmelidir.
+
+Sistemde gerçekleşen tüm finansal hareketler kayıt altına alınmalı ve geçmişe dönük olarak takip edilebilmelidir.
+
+2. Geliştirilmesi Beklenen Fonksiyonlar
+A. Müşteri ve Hesap Yönetimi
+Müşteri oluşturma, güncelleme ve listeleme servisleri.
+Müşteriye ait birden fazla hesap oluşturabilme.
+Hesap detaylarını ve mevcut bakiyeyi sorgulama.
+Hesapların aktif/pasif durumlarını yönetme.
+B. Finansal İşlemler
+Hesaba para yükleme.
+Hesaptan para çekme.
+İki hesap arasında para transferi.
+İşlem tutarı ve hesap bakiyesi kontrolleri.
+Her finansal işlem için benzersiz işlem numarası oluşturma.
+İşlem durumlarının (beklemede, başarılı, başarısız vb.) yönetilmesi.
+C. İşlem Geçmişi
+Hesap bazlı işlem geçmişi.
+Tarih aralığına göre filtreleme.
+İşlem türüne göre filtreleme.
+Minimum ve maksimum tutara göre filtreleme.
+Sayfalama (pagination) ve sıralama.
+İşlem detaylarının görüntülenmesi.
+D. Raporlama
+Toplam para girişi ve çıkışı.
+Günlük, haftalık ve aylık işlem raporları.
+Hesap bazlı finansal hareket raporu.
+Başarılı ve başarısız işlem istatistikleri.
+3. Teknik Gereksinimler
+Backend NodeJS, Java Spring Boot veya .NET Core kullanılarak geliştirilmelidir.
+Veritabanı olarak PostgreSQL, Oracle veya MySQL kullanılabilir.
+RESTful API mimarisi uygulanmalıdır.
+Veritabanı tasarımı ilişkisel veri modeline uygun olmalıdır.
+Finansal işlemlerde veri bütünlüğü korunmalıdır.
+Para tutarları hassasiyet kaybına yol açmayacak veri tipleriyle tutulmalıdır.
+İşlem geçmişi silinmeyecek şekilde tasarlanmalıdır.
+API katmanında uygun validasyon ve hata yönetimi uygulanmalıdır.
+Kod modüler, okunabilir ve genişletilebilir olmalıdır.
+Unit ve Integration testleri yazılmalıdır.
+API dokümantasyonu hazırlanmalıdır.
+4. Teslim Edilmesi Gerekenler
+1.
+Çalışır durumda backend projesi.
+2.
+Veritabanı şeması ve migration dosyaları.
+3.
+API endpoint dokümantasyonu.
+4.
+Unit ve Integration testleri.
+5.
+Dockerfile ve mümkünse Docker Compose yapılandırması.
+6.
+Kurulum ve çalıştırma adımlarını içeren README.
+7.
+Mimari tasarımı ve teknik tercihleri açıklayan kısa dokümantasyon.
+Bonus puan
+Arayüz de sunarsanız puanınız artar
+İki ödev de servis (backend) tarafına odaklanıyor; arayüz geliştirmek zorunlu değil. Ancak yazdığınız servisleri bir arayüzle sunarsanız, bunu ayrıca değerlendirip 100 puanlık toplamın üzerine bonus puan veriyoruz.
+
+Nedeni şu: arayüz bize yalnızca kod yazma becerinizi değil, estetik zevkinizi, detaya verdiğiniz önemi ve işi uçtan uca sahiplenişinizi de gösteriyor. Kullanıcının gördüğü tarafın da sizin elinizden çıkmış olması, profesyonelliğinizi değerlendirebildiğimiz en iyi yerlerden biri.
+
+React, Angular ya da rahat ettiğiniz başka bir teknolojiyle yapabilirsiniz; kapsamı siz belirleyin. Arayüz göndermemeniz puanınızı düşürmez, göndermeniz yükseltir.
+
+Nasıl puanlanır
+Çalışmanız yedi başlıkta ayrı ayrı değerlendirilir; toplam 100 puan üzerinden aldığınız sonuç gerekçeleriyle birlikte sizinle paylaşılır.
+
+20
+Kod kalitesi ve Clean Code
+Okunabilirlik, isimlendirme, tekrarın önlenmesi, tutarlı biçim.
+20
+Mimari tasarım ve SOLID
+Katmanların ayrışması, bağımlılık yönetimi, genişletilebilirlik.
+15
+SQL ve veritabanı optimizasyonu
+Veri modeli, indeksleme, sorgu maliyeti, migration düzeni.
+15
+Concurrency ve veri tutarlılığı
+Transaction yönetimi, kilitleme stratejisi, yarış koşullarına dayanıklılık.
+10
+Performans ve ölçeklenebilirlik
+Yük altında davranış, bellek kullanımı, toplu işlem yaklaşımı.
+10
+Hata yönetimi ve güvenlik
+Anlamlı hata yanıtları, girdi doğrulama, yetkilendirme ve loglama.
+10
+Test kalitesi
+Kapsam, anlamlı senaryolar, kırılgan olmayan testler.
++
+Arayüz (isteğe bağlı)
+Servislerinizi kullanılabilir bir ekranla sunmanız. Zorunlu değil; yaptığınızda toplam puanınızın üzerine eklenir.
