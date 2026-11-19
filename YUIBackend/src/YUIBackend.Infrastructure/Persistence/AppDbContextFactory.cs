@@ -11,9 +11,35 @@ namespace MyProject.Infrastructure.Persistence
     {
         public AppDbContext CreateDbContext(string[] args)
         {
+            var searchDirectory = new DirectoryInfo(Directory.GetCurrentDirectory());
+            string? webApiDirectory = null;
+
+            while (searchDirectory is not null)
+            {
+                var candidate = Path.Combine(searchDirectory.FullName, "YUIBackend", "src", "YUIBackend.WebAPI");
+                if (File.Exists(Path.Combine(candidate, "appsettings.json")))
+                {
+                    webApiDirectory = candidate;
+                    break;
+                }
+
+                candidate = Path.Combine(searchDirectory.FullName, "src", "YUIBackend.WebAPI");
+                if (File.Exists(Path.Combine(candidate, "appsettings.json")))
+                {
+                    webApiDirectory = candidate;
+                    break;
+                }
+
+                searchDirectory = searchDirectory.Parent;
+            }
+
+            if (webApiDirectory is null)
+            {
+                throw new InvalidOperationException("YUIBackend.WebAPI/appsettings.json could not be found.");
+            }
+
             var config = new ConfigurationBuilder()
-                .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(),
-                    "..", "MyProject.WebAPI"))
+                .SetBasePath(webApiDirectory)
                 .AddJsonFile("appsettings.json", optional: false)
                 .Build();
 

@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\MyProject.Domain\MyProject.Domain.csproj" />
-    <ProjectReference Include="..\MyProject.Application\MyProject.Application.csproj" />
+    <ProjectReference Include="..\YUIBackend.Domain\YUIBackend.Domain.csproj" />
+    <ProjectReference Include="..\YUIBackend.Application\YUIBackend.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetFramework>net11.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
