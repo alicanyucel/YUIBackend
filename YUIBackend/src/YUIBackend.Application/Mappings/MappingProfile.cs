@@ -4,10 +4,10 @@ using MyProject.Domain.Entities;
 
 namespace MyProject.Application.Mappings;
 
-public sealed class ProductMappingProfile : Profile
+public sealed class MappingProfile : Profile
 {
-    public ProductMappingProfile()
+    public MappingProfile()
     {
-        CreateMap<Product, ProductDto>();
+        CreateMap<Product, ProductDto>().ReverseMap();
     }
 }
