@@ -12,6 +12,9 @@ namespace MyProject.Infrastructure.Persistence
         ITenantService tenantService) : DbContext(options), IUnitOfWork
     {
         public DbSet<Product> Products => Set<Product>();
+        public DbSet<Customer> Customers => Set<Customer>();
+        public DbSet<Account> Accounts => Set<Account>();
+        public DbSet<FinancialTransaction> FinancialTransactions => Set<FinancialTransaction>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,6 +25,9 @@ namespace MyProject.Infrastructure.Persistence
             if (!string.IsNullOrEmpty(tenantId))
             {
                 modelBuilder.Entity<Product>().HasQueryFilter(p => p.TenantId == tenantId);
+                modelBuilder.Entity<Customer>().HasQueryFilter(customer => customer.TenantId == tenantId);
+                modelBuilder.Entity<Account>().HasQueryFilter(account => account.TenantId == tenantId);
+                modelBuilder.Entity<FinancialTransaction>().HasQueryFilter(transaction => transaction.TenantId == tenantId);
             }
 
             base.OnModelCreating(modelBuilder);
