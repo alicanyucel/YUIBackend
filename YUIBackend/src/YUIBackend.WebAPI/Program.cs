@@ -37,15 +37,33 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options => options.SwaggerDoc("v1", new OpenApiInfo
+builder.Services.AddSwaggerGen(options =>
 {
-    Title = "YUIBackend API",
-    Version = "v1",
-    Contact = new OpenApiContact
+    options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Email = "yucelalicandan@hotmail.com"
-    }
-}));
+        Title = "YUIBackend API",
+        Version = "v1",
+        Contact = new OpenApiContact
+        {
+            Email = "yucelalicandan@hotmail.com"
+        }
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT token girin. Swagger, Authorization başlığına Bearer önekini ekler."
+    });
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 
 // ── JWT Auth ──────────────────────────────────────────────────────────────
 builder.Services.AddAuthentication("Bearer")
