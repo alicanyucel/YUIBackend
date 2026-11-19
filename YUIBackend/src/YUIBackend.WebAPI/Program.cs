@@ -1,9 +1,12 @@
 using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using MyProject.Application;
+using MyProject.Domain.Entities;
 using MyProject.Infrastructure;
 using MyProject.WebAPI.Middleware;
 using OpenTelemetry.Metrics;
@@ -30,6 +33,7 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
 // ── Application + Infrastructure ──────────────────────────────────────────
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddScoped<IPasswordHasher<InitialUser>, PasswordHasher<InitialUser>>();
 
 // ── Controllers + OpenAPI ─────────────────────────────────────────────────
 builder.Services.AddControllers();
@@ -73,6 +77,8 @@ builder.Services.AddAuthentication("Bearer")
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+            ClockSkew = TimeSpan.FromSeconds(30),
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
@@ -80,7 +86,12 @@ builder.Services.AddAuthentication("Bearer")
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
@@ -148,7 +159,7 @@ app.MapControllers().RequireRateLimiting("fixed");
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-});
+}).AllowAnonymous();
 
 // ── Prometheus metrics ────────────────────────────────────────────────────
 app.MapPrometheusScrapingEndpoint("/metrics");

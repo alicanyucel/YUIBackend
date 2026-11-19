@@ -1,6 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MyProject.Application.Features.Products.Commands.CreateProduct;
+using MyProject.Application.Features.Products.Commands.DeleteProduct;
+using MyProject.Application.Features.Products.Commands.UpdateProduct;
 using MyProject.Application.Features.Products.Queries.GetAllProducts;
 using MyProject.Application.Features.Products.Queries.GetProductById;
 using MyProject.Domain.Abstractions;
@@ -12,9 +14,12 @@ namespace MyProject.WebAPI.Controllers;
 public sealed class ProductsController(ISender sender) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        var result = await sender.Send(new GetAllProductsQuery(), cancellationToken);
+        var result = await sender.Send(new GetAllProductsQuery(pageNumber, pageSize), cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 
@@ -32,5 +37,29 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetById), new { id = result.Value }, result.Value)
             : BadRequest(result.Error);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateProductCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (id != command.Id)
+            return BadRequest("Route id must match the request id.");
+
+        var result = await sender.Send(command, cancellationToken);
+        if (result.IsSuccess)
+            return NoContent();
+        return result.Error.Code.EndsWith(".NotFound", StringComparison.Ordinal)
+            ? NotFound(result.Error)
+            : BadRequest(result.Error);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new DeleteProductCommand(id), cancellationToken);
+        return result.IsSuccess ? NoContent() : NotFound(result.Error);
     }
 }

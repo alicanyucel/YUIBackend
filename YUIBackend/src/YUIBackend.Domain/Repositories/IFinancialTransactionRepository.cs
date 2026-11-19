@@ -7,4 +7,9 @@ public interface IFinancialTransactionRepository : IRepository<FinancialTransact
 {
     Task<FinancialTransaction?> GetByTransactionNumberAsync(string transactionNumber, CancellationToken cancellationToken = default);
     Task<IEnumerable<FinancialTransaction>> GetByAccountIdAsync(Guid accountId, CancellationToken cancellationToken = default);
+    Task<PagedResult<FinancialTransaction>> GetPageByAccountIdAsync(
+        Guid accountId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
 }

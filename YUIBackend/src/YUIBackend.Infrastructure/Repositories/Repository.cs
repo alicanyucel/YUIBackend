@@ -16,6 +16,22 @@ internal abstract class Repository<T>(AppDbContext context) : IRepository<T>
     public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
         => await DbSet.ToListAsync(cancellationToken);
 
+    public virtual async Task<PagedResult<T>> GetPageAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = DbSet.AsNoTracking()
+            .OrderBy(entity => entity.CreatedAt)
+            .ThenBy(entity => entity.Id);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query.Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<T>(items, totalCount, pageNumber, pageSize);
+    }
+
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
         => await DbSet.AddAsync(entity, cancellationToken);
 
@@ -23,5 +39,5 @@ internal abstract class Repository<T>(AppDbContext context) : IRepository<T>
         => DbSet.Update(entity);
 
     public void Delete(T entity)
-        => DbSet.Remove(entity);
+        => entity.SoftDelete();
 }

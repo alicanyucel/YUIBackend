@@ -18,23 +18,31 @@ public sealed class AppDbContext(
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<FinancialTransaction> FinancialTransactions => Set<FinancialTransaction>();
+    public DbSet<InitialUser> InitialUsers => Set<InitialUser>();
+
+    private string? CurrentTenantId => tenantService.GetCurrentTenantId();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        modelBuilder.Entity<Product>().Property(product => product.IsDeleted).HasDefaultValue(false);
+        modelBuilder.Entity<Customer>().Property(customer => customer.IsDeleted).HasDefaultValue(false);
+        modelBuilder.Entity<Account>().Property(account => account.IsDeleted).HasDefaultValue(false);
+        modelBuilder.Entity<FinancialTransaction>().Property(transaction => transaction.IsDeleted).HasDefaultValue(false);
+        modelBuilder.Entity<InitialUser>().Property(user => user.IsDeleted).HasDefaultValue(false);
+        modelBuilder.Entity<InitialUser>().HasQueryFilter(user => !user.IsDeleted);
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
 
-        // Multi-tenant global query filter
-        var tenantId = tenantService.GetCurrentTenantId();
-        if (!string.IsNullOrEmpty(tenantId))
-        {
-            modelBuilder.Entity<Product>().HasQueryFilter(p => p.TenantId == tenantId);
-            modelBuilder.Entity<Customer>().HasQueryFilter(customer => customer.TenantId == tenantId);
-            modelBuilder.Entity<Account>().HasQueryFilter(account => account.TenantId == tenantId);
-            modelBuilder.Entity<FinancialTransaction>().HasQueryFilter(transaction => transaction.TenantId == tenantId);
-        }
+        modelBuilder.Entity<Product>().HasQueryFilter(product =>
+            !product.IsDeleted && (CurrentTenantId == null || product.TenantId == CurrentTenantId));
+        modelBuilder.Entity<Customer>().HasQueryFilter(customer =>
+            !customer.IsDeleted && (CurrentTenantId == null || customer.TenantId == CurrentTenantId));
+        modelBuilder.Entity<Account>().HasQueryFilter(account =>
+            !account.IsDeleted && (CurrentTenantId == null || account.TenantId == CurrentTenantId));
+        modelBuilder.Entity<FinancialTransaction>().HasQueryFilter(transaction =>
+            !transaction.IsDeleted && (CurrentTenantId == null || transaction.TenantId == CurrentTenantId));
 
         base.OnModelCreating(modelBuilder);
     }
