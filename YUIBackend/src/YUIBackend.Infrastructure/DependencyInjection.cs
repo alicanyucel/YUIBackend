@@ -2,18 +2,13 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using MyProject.Application.Abstractions.Cache;
 using MyProject.Application.Abstractions.Messaging;
-using MyProject.Application.Abstractions.MultiTenancy;
 using MyProject.Domain.Abstractions;
-using MyProject.Domain.Repositories;
-using MyProject.Infrastructure.Cache;
 using MyProject.Infrastructure.Messaging;
 using MyProject.Infrastructure.Messaging.Consumers;
 using MyProject.Infrastructure.Messaging.Sagas;
-using MyProject.Infrastructure.MultiTenancy;
 using MyProject.Infrastructure.Persistence;
-using MyProject.Infrastructure.Repositories;
+using Scrutor;
 using StackExchange.Redis;
 
 namespace MyProject.Infrastructure;
@@ -28,20 +23,20 @@ public static class DependencyInjection
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
 
-        // Repositories
-        services.AddScoped<IProductRepository, ProductRepository>();
-        services.AddScoped<ICustomerRepository, CustomerRepository>();
-        services.AddScoped<IAccountRepository, AccountRepository>();
-        services.AddScoped<IFinancialTransactionRepository, FinancialTransactionRepository>();
+        // Automatically register infrastructure implementations by their interfaces.
+        services.Scan(scan => scan
+            .FromAssemblyOf<AppDbContext>()
+            .AddClasses(classes => classes.InNamespaces(
+                "MyProject.Infrastructure.Repositories",
+                "MyProject.Infrastructure.Cache",
+                "MyProject.Infrastructure.MultiTenancy"), publicOnly: false)
+            .AsImplementedInterfaces()
+            .WithScopedLifetime());
+        services.AddScoped<IEventBus, EventBus>();
 
-        // Multi-Tenancy
         services.AddHttpContextAccessor();
-        services.AddScoped<ITenantService, TenantService>();
-
-        // Redis Cache
         services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")!));
-        services.AddScoped<ICacheService, RedisCacheService>();
 
         // MassTransit + RabbitMQ + Saga
         services.AddMassTransit(x =>
@@ -62,8 +57,6 @@ public static class DependencyInjection
                     e.ConfigureSaga<OrderState>(ctx));
             });
         });
-
-        services.AddScoped<IEventBus, EventBus>();
 
         return services;
     }
