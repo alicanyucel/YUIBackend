@@ -30,6 +30,9 @@ namespace MyProject.Infrastructure
 
             // Repositories
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<IAccountRepository, AccountRepository>();
+            services.AddScoped<IFinancialTransactionRepository, FinancialTransactionRepository>();
 
             // Multi-Tenancy
             services.AddHttpContextAccessor();

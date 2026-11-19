@@ -17,7 +17,16 @@ using System.Threading.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Serilog ────────────────────────────────────────────────────────────────
-builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configuration));
+builder.Host.UseSerilog((ctx, cfg) => cfg
+    .ReadFrom.Configuration(ctx.Configuration)
+    .WriteTo.MSSqlServer(
+        connectionString: ctx.Configuration.GetConnectionString("SqlServer")!,
+        sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
+        {
+            TableName = "ApplicationLogs",
+            SchemaName = "dbo",
+            AutoCreateSqlTable = true
+        }));
 
 // ── Application + Infrastructure ──────────────────────────────────────────
 builder.Services.AddApplication();
