@@ -17,170 +17,178 @@ using Serilog;
 using System.Text;
 using System.Threading.RateLimiting;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// ── Serilog ────────────────────────────────────────────────────────────────
-builder.Host.UseSerilog((ctx, cfg) => cfg
-    .ReadFrom.Configuration(ctx.Configuration)
-    .WriteTo.MSSqlServer(
-        connectionString: ctx.Configuration.GetConnectionString("SqlServer")!,
-        sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
-        {
-            TableName = "ApplicationLogs",
-            SchemaName = "dbo",
-            AutoCreateSqlTable = true
-        }));
-
-// ── Application + Infrastructure ──────────────────────────────────────────
-builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddScoped<IPasswordHasher<InitialUser>, PasswordHasher<InitialUser>>();
-builder.Services.AddScoped<ICustomerResourceAccess, CustomerResourceAccess>();
-
-// ── Controllers + OpenAPI ─────────────────────────────────────────────────
-builder.Services.AddControllers();
-builder.Services.AddOpenApi();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
+public partial class Program {
+    private static void Main(string[] args)
     {
-        Title = "YUIBackend API",
-        Version = "v1",
-        Contact = new OpenApiContact
-        {
-            Email = "yucelalicandan@hotmail.com"
-        }
-    });
+        var builder = WebApplication.CreateBuilder(args);
 
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "JWT token girin. Swagger, Authorization başlığına Bearer önekini ekler."
-    });
+        // ── Serilog ────────────────────────────────────────────────────────────────
+        builder.Host.UseSerilog((ctx, cfg) => cfg
+            .ReadFrom.Configuration(ctx.Configuration)
+            .WriteTo.MSSqlServer(
+                connectionString: ctx.Configuration.GetConnectionString("SqlServer")!,
+                sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
+                {
+                    TableName = "ApplicationLogs",
+                    SchemaName = "dbo",
+                    AutoCreateSqlTable = true
+                }));
 
-    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
-        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
-    });
-});
+        // ── Application + Infrastructure ──────────────────────────────────────────
+        builder.Services.AddApplication();
+        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddScoped<IPasswordHasher<InitialUser>, PasswordHasher<InitialUser>>();
+        builder.Services.AddScoped<ICustomerResourceAccess, CustomerResourceAccess>();
 
-// ── JWT Auth ──────────────────────────────────────────────────────────────
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
+        // ── Controllers + OpenAPI ─────────────────────────────────────────────────
+        builder.Services.AddControllers();
+        builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+            policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()));
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen(options =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
-            ClockSkew = TimeSpan.FromSeconds(30),
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
-        };
-        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
-        {
-            OnAuthenticationFailed = context =>
+            options.SwaggerDoc("v1", new OpenApiInfo
             {
-                var logger = context.HttpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("JwtBearer");
-                logger.LogWarning(context.Exception, "Bearer token validation failed.");
-                return Task.CompletedTask;
-            }
-        };
-    });
+                Title = "YUIBackend API",
+                Version = "v1",
+                Contact = new OpenApiContact
+                {
+                    Email = "yucelalicandan@hotmail.com"
+                }
+            });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.FallbackPolicy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
-    options.AddPolicy("Administrator", policy => policy.RequireRole("Admin"));
-});
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "JWT token girin. Swagger, Authorization başlığına Bearer önekini ekler."
+            });
 
-// ── Rate Limiting ─────────────────────────────────────────────────────────
-var rateLimitPermitLimit = builder.Configuration.GetValue("RateLimiting:PermitLimit", 100);
-if (rateLimitPermitLimit < 1)
-    throw new InvalidOperationException("RateLimiting:PermitLimit must be greater than zero.");
+            options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+            });
+        });
 
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("fixed", o =>
-    {
-        o.PermitLimit = rateLimitPermitLimit;
-        o.Window = TimeSpan.FromMinutes(1);
-        o.QueueLimit = 10;
-        o.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-    });
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-});
+        // ── JWT Auth ──────────────────────────────────────────────────────────────
+        builder.Services.AddAuthentication("Bearer")
+            .AddJwtBearer("Bearer", options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+                    ClockSkew = TimeSpan.FromSeconds(30),
+                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                    ValidAudience = builder.Configuration["Jwt:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+                };
+                options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices
+                            .GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("JwtBearer");
+                        logger.LogWarning(context.Exception, "Bearer token validation failed.");
+                        return Task.CompletedTask;
+                    }
+                };
+            });
 
-// ── Health Checks ─────────────────────────────────────────────────────────
-builder.Services.AddHealthChecks()
-    .AddSqlServer(
-        builder.Configuration.GetConnectionString("SqlServer")!,
-        name: "sqlserver",
-        tags: ["db", "sql"])
-    .AddRedis(
-        builder.Configuration.GetConnectionString("Redis")!,
-        name: "redis",
-        tags: ["cache"],
-        timeout: TimeSpan.FromSeconds(1));
+        builder.Services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+            options.AddPolicy("Administrator", policy => policy.RequireRole("Admin"));
+        });
 
-// ── OpenTelemetry ─────────────────────────────────────────────────────────
-builder.Services.AddOpenTelemetry()
-    .ConfigureResource(r => r.AddService("MyProject.WebAPI"))
-    .WithTracing(tracing => tracing
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation())
-    .WithMetrics(metrics => metrics
-        .AddAspNetCoreInstrumentation()
-        .AddPrometheusExporter());
+        // ── Rate Limiting ─────────────────────────────────────────────────────────
+        var rateLimitPermitLimit = builder.Configuration.GetValue("RateLimiting:PermitLimit", 100);
+        if (rateLimitPermitLimit < 1)
+            throw new InvalidOperationException("RateLimiting:PermitLimit must be greater than zero.");
 
-// ── Exception Handler ─────────────────────────────────────────────────────
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails();
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.AddFixedWindowLimiter("fixed", o =>
+            {
+                o.PermitLimit = rateLimitPermitLimit;
+                o.Window = TimeSpan.FromMinutes(1);
+                o.QueueLimit = 10;
+                o.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            });
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        });
 
-// ─────────────────────────────────────────────────────────────────────────
-var app = builder.Build();
+        // ── Health Checks ─────────────────────────────────────────────────────────
+        builder.Services.AddHealthChecks()
+            .AddSqlServer(
+                builder.Configuration.GetConnectionString("SqlServer")!,
+                name: "sqlserver",
+                tags: ["db", "sql"])
+            .AddRedis(
+                builder.Configuration.GetConnectionString("Redis")!,
+                name: "redis",
+                tags: ["cache"],
+                timeout: TimeSpan.FromSeconds(1));
 
-// ── Pipeline ──────────────────────────────────────────────────────────────
-app.UseSerilogRequestLogging();
-app.UseExceptionHandler();
+        // ── OpenTelemetry ─────────────────────────────────────────────────────────
+        builder.Services.AddOpenTelemetry()
+            .ConfigureResource(r => r.AddService("MyProject.WebAPI"))
+            .WithTracing(tracing => tracing
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation())
+            .WithMetrics(metrics => metrics
+                .AddAspNetCoreInstrumentation()
+                .AddPrometheusExporter());
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi().AllowAnonymous();
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "YUIBackend API v1"));
+        // ── Exception Handler ─────────────────────────────────────────────────────
+        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+        builder.Services.AddProblemDetails();
+
+        // ─────────────────────────────────────────────────────────────────────────
+        var app = builder.Build();
+
+        // ── Pipeline ──────────────────────────────────────────────────────────────
+        app.UseSerilogRequestLogging();
+        app.UseExceptionHandler();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "YUIBackend API v1"));
+        }
+
+        app.UseHttpsRedirection();
+        app.UseCors();
+        app.UseRateLimiter();
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.MapControllers().RequireRateLimiting("fixed");
+
+        // ── Health Check endpoint ─────────────────────────────────────────────────
+        app.MapHealthChecks("/health", new HealthCheckOptions
+        {
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        }).AllowAnonymous();
+
+        // ── Prometheus metrics ────────────────────────────────────────────────────
+        app.MapPrometheusScrapingEndpoint("/metrics");
+
+        app.Run();
+    }
 }
-
-app.UseHttpsRedirection();
-app.UseRateLimiter();
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers().RequireRateLimiting("fixed");
-
-// ── Health Check endpoint ─────────────────────────────────────────────────
-app.MapHealthChecks("/health", new HealthCheckOptions
-{
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-}).AllowAnonymous();
-
-// ── Prometheus metrics ────────────────────────────────────────────────────
-app.MapPrometheusScrapingEndpoint("/metrics");
-
-app.Run();
 
 public partial class Program { }

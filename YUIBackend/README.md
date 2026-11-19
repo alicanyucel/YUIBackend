@@ -113,7 +113,7 @@ dotnet ef database update --project ".\src\YUIBackend.Infrastructure\YUIBackend.
 dotnet run --project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj" --launch-profile http
 ```
 
-HTTP profili `http://localhost:5270` adresini kullanır ve tarayıcıda Swagger'ı açar. Swagger UI: <http://localhost:5270/swagger>. HTTPS profili: <https://localhost:7139/swagger>. OpenAPI JSON belgeleri `/swagger/v1/swagger.json` (Swagger UI'nin kullandığı) ve `/openapi/v1.json` adreslerinde Development ortamında anonim olarak sunulur.
+HTTP profili `http://localhost:5270` adresini kullanır ve tarayıcıda Swagger'ı açar. Swagger UI: <http://localhost:5270/swagger>. HTTPS profili: <https://localhost:7139/swagger>. OpenAPI JSON belgesi `/swagger/v1/swagger.json` adresinde Development ortamında sunulur.
 
 Port kullanımda hatası alırsanız, önce çalışan eski API örneğini Visual Studio Stop düğmesi veya `Shift+F5` ile durdurun. Birden fazla API örneği aynı portu aynı anda dinleyemez.
 
@@ -435,10 +435,10 @@ Versiyonlar proje dosyalarındaki doğrudan `PackageReference` değerleridir. Tr
 | `AspNetCore.HealthChecks.UI.Client` | 9.0.0 | Health-check UI formatında HTTP yanıtı |
 | `MassTransit.RabbitMQ` | 8.4.1 | API host'unda messaging transport desteği |
 | `Microsoft.AspNetCore.Authentication.JwtBearer` | 10.0.6 | Bearer JWT authentication middleware |
-| `Microsoft.AspNetCore.OpenApi` | 10.0.6 | ASP.NET Core OpenAPI desteği |
+
 | `Serilog.Sinks.MSSqlServer` | 9.0.0 | Logları SQL Server'a yazma ve `ApplicationLogs` tablosunu oluşturma |
 | `System.Configuration.ConfigurationManager` | 9.0.4 | ConfigurationManager uyumluluk bağımlılığı |
-| `Swashbuckle.AspNetCore` | 10.1.4 | Swagger/OpenAPI belgesi ve Swagger UI |
+| `Swashbuckle.AspNetCore` | 11.0.1 | Swagger/OpenAPI belgesi ve Swagger UI |
 | `Microsoft.EntityFrameworkCore.Design` | 10.0.6 | WebAPI startup projesi üzerinden EF tasarım zamanı |
 | `OpenTelemetry.Exporter.Prometheus.AspNetCore` | 1.15.2-beta.1 | Prometheus exporter |
 | `OpenTelemetry.Extensions.Hosting` | 1.15.2 | Host ile OpenTelemetry entegrasyonu |
