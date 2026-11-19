@@ -6,7 +6,7 @@ using MyProject.Application.Features.Products.Commands.DeleteProduct;
 using MyProject.Application.Features.Products.Commands.UpdateProduct;
 using MyProject.Application.Features.Products.Queries.GetAllProducts;
 using MyProject.Application.Features.Products.Queries.GetProductById;
-using MyProject.Domain.Abstractions;
+
 
 namespace MyProject.WebAPI.Controllers;
 
