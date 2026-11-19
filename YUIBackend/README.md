@@ -235,6 +235,10 @@ Controller uçları JWT ister; istisnalar kayıt, login ve health endpoint'lerid
 | `GET` | `/health` | Servis health-check özeti; JWT istemez. |
 | `GET` | `/metrics` | Prometheus metrics çıktısı; dış erişimi production'da ağ/policy ile sınırlayın. |
 
+### Postman koleksiyonu
+
+`YUIBackend.postman_collection.json` dosyasını Postman'de **Import** ile içe aktarın. Koleksiyon değişkenlerinde `baseUrl` değerini çalışan API adresine göre ayarlayın; `username` ve `password` alanlarını kayıt/giriş bilgilerinizle doldurun. İlk kullanımda müşteri kaydı ve login isteklerini çalıştırın; login yanıtındaki JWT sonraki isteklerde otomatik kullanılır. Kayıt ve login dışındaki istekler JWT ister. Yönetici uçları için yönetici hesabıyla tekrar login olun. Koleksiyon başarılı kayıt ve hesap oluşturma yanıtlarından kimlikleri değişkenlere alır; transfer için `destinationAccountId` değerini Postman değişkenlerinde başka bir hesaba ayarlayın.
+
 Yönetici müşteri oluşturma JSON örneği:
 
 ```json

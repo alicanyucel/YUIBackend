@@ -1,0 +1,301 @@
+{
+  "info": {
+    "_postman_id": "76cc818c-1c4d-45a3-b7e7-66e94e9c85d6",
+    "name": "YUIBackend Financial Operations API",
+    "description": "Postman collection for customer registration, authentication, account management, financial operations, transaction history, reporting, and administrator product management. Set baseUrl and credentials in collection variables. Start the API and apply EF migrations before running requests. Customer operations require a customer token; product operations and cross-customer administration require an administrator token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5270", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "username", "value": "", "type": "string" },
+    { "key": "password", "value": "", "type": "string" },
+    { "key": "firstName", "value": "Ada", "type": "string" },
+    { "key": "lastName", "value": "Yilmaz", "type": "string" },
+    { "key": "email", "value": "ada@example.test", "type": "string" },
+    { "key": "phoneNumber", "value": "+90 555 000 00 00", "type": "string" },
+    { "key": "customerId", "value": "", "type": "string" },
+    { "key": "accountId", "value": "", "type": "string" },
+    { "key": "destinationAccountId", "value": "", "type": "string" },
+    { "key": "transactionId", "value": "", "type": "string" },
+    { "key": "productId", "value": "", "type": "string" },
+    { "key": "fromUtc", "value": "2026-01-01T00:00:00Z", "type": "string" },
+    { "key": "toUtc", "value": "2027-01-01T00:00:00Z", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register customer",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"email\": \"{{email}}\",\n  \"phoneNumber\": \"{{phoneNumber}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "Creates a customer and login account. Use a unique username/email and a password of at least 12 characters."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  if (body.customerId) pm.collectionVariables.set('customerId', body.customerId);",
+                "  pm.test('Customer registered', function () { pm.expect(body.username).to.eql(pm.collectionVariables.get('username')); });",
+                "}"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Login (customer or administrator)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Stores the returned JWT in the accessToken collection variable for subsequent requests. For a fresh database, the first configured bootstrap login creates the administrator."
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  pm.collectionVariables.set('accessToken', body.accessToken);",
+                "  pm.test('JWT returned', function () { pm.expect(body.tokenType).to.eql('Bearer'); pm.expect(body.accessToken).to.be.a('string').and.not.empty; });",
+                "}"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "List customers (admin: all, customer: own)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/customers?pageNumber=1&pageSize=20" }
+        },
+        {
+          "name": "Get customer profile",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/customers/{{customerId}}" }
+        },
+        {
+          "name": "Update own profile (or admin update)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{customerId}}\",\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"email\": \"{{email}}\",\n  \"phoneNumber\": \"{{phoneNumber}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/customers/{{customerId}}",
+            "description": "A customer may update only their own contact/profile information; only administrators can change IsActive."
+          }
+        },
+        {
+          "name": "Create customer (administrator)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"New\",\n  \"lastName\": \"Customer\",\n  \"email\": \"new.customer@example.test\",\n  \"phoneNumber\": \"+90 555 000 0000\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/customers"
+          }
+        },
+        {
+          "name": "Delete customer (administrator; only if no accounts)",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/customers/{{customerId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "item": [
+        {
+          "name": "List accounts",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/accounts?pageNumber=1&pageSize=20" }
+        },
+        {
+          "name": "Get account and balance",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/accounts/{{accountId}}" }
+        },
+        {
+          "name": "Create account",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"accountNumber\": \"{{accountNumber}}\",\n  \"currencyCode\": \"TRY\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/accounts",
+            "description": "For customer users, the server overrides customerId with the authenticated customer's ID. Use a unique accountNumber."
+          },
+          "event": [{
+            "listen": "prerequest",
+            "script": { "type": "text/javascript", "exec": ["pm.collectionVariables.set('accountNumber', 'TR-' + pm.variables.replaceIn('{{$guid}}').replaceAll('-', '').substring(0, 24));"] }
+          }, {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  let body; try { body = pm.response.json(); } catch (_) { body = pm.response.text(); }",
+                "  const id = typeof body === 'string' ? body.replaceAll('\\\"', '') : (body.id || body.accountId);",
+                "  if (id) pm.collectionVariables.set('accountId', id);",
+                "}"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "Update account status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"id\": \"{{accountId}}\",\n  \"status\": \"Inactive\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/accounts/{{accountId}}"
+          }
+        },
+        {
+          "name": "Delete empty account",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/accounts/{{accountId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Financial operations",
+      "item": [
+        {
+          "name": "Deposit",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"amount\": 100.25,\n  \"description\": \"Initial deposit\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/financialtransactions/deposit"
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.collectionVariables.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["if (pm.response.code === 201 || pm.response.code === 200) { const body = pm.response.json(); if (body.transactionId) pm.collectionVariables.set('transactionId', body.transactionId); }"] } }]
+        },
+        {
+          "name": "Withdraw",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"amount\": 10.00,\n  \"description\": \"Cash withdrawal\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/financialtransactions/withdraw"
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.collectionVariables.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));"] } }]
+        },
+        {
+          "name": "Transfer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }],
+            "body": { "mode": "raw", "raw": "{\n  \"sourceAccountId\": \"{{accountId}}\",\n  \"destinationAccountId\": \"{{destinationAccountId}}\",\n  \"amount\": 25.50,\n  \"description\": \"Account transfer\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/financialtransactions/transfer",
+            "description": "The source account must belong to the authenticated customer. The destination may belong to another customer."
+          },
+          "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.collectionVariables.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));"] } }]
+        }
+      ]
+    },
+    {
+      "name": "Transaction history and reports",
+      "item": [
+        {
+          "name": "List transactions with filters and pagination",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/financialtransactions?accountId={{accountId}}&fromUtc={{fromUtc}}&toUtc={{toUtc}}&type=Transfer&minimumAmount=0&pageNumber=1&pageSize=20&descending=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "financialtransactions"],
+              "query": [
+                { "key": "accountId", "value": "{{accountId}}" },
+                { "key": "fromUtc", "value": "{{fromUtc}}" },
+                { "key": "toUtc", "value": "{{toUtc}}" },
+                { "key": "type", "value": "Transfer" },
+                { "key": "minimumAmount", "value": "0" },
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "20" },
+                { "key": "descending", "value": "true" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get transaction details",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/financialtransactions/{{transactionId}}" }
+        },
+        {
+          "name": "Get account transaction history",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/financialtransactions/account/{{accountId}}?fromUtc={{fromUtc}}&toUtc={{toUtc}}&pageNumber=1&pageSize=20&descending=true" }
+        },
+        {
+          "name": "Report (daily, weekly, monthly)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/financialtransactions/reports?fromUtc={{fromUtc}}&toUtc={{toUtc}}&period=Daily&accountId={{accountId}}" },
+          "description": "Set period to Daily, Weekly, or Monthly. Dates are UTC; toUtc is exclusive."
+        }
+      ]
+    },
+    {
+      "name": "Administrator products",
+      "description": "These requests require a JWT for a user with the Admin role.",
+      "item": [
+        { "name": "List products", "request": { "method": "GET", "url": "{{baseUrl}}/api/products?pageNumber=1&pageSize=20" } },
+        { "name": "Get product", "request": { "method": "GET", "url": "{{baseUrl}}/api/products/{{productId}}" } },
+        {
+          "name": "Create product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test product\",\n  \"description\": \"Sample product\",\n  \"price\": 19.99,\n  \"stock\": 10\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/products"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["if (pm.response.code === 201) { let body; try { body = pm.response.json(); } catch (_) { body = pm.response.text(); } const id = typeof body === 'string' ? body.replaceAll('\\\"', '') : body.id; if (id) pm.collectionVariables.set('productId', id); }"] } }]
+        },
+        {
+          "name": "Update product",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"id\": \"{{productId}}\",\n  \"name\": \"Updated product\",\n  \"description\": \"Updated sample\",\n  \"price\": 20.99,\n  \"stock\": 8\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          }
+        },
+        { "name": "Delete product (soft delete)", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/products/{{productId}}" } }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [{ "name": "Health check", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/health" } }]
+    }
+  ]
+}
