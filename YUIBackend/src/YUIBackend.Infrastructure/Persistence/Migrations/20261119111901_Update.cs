@@ -2,21 +2,20 @@
 
 #nullable disable
 
-namespace YUIBackend.Infrastructure.Persistence.Migrations
+namespace YUIBackend.Infrastructure.Persistence.Migrations;
+
+/// <inheritdoc />
+public partial class Update : Migration
 {
     /// <inheritdoc />
-    public partial class Update : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
 
-        }
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
 
-        }
     }
 }

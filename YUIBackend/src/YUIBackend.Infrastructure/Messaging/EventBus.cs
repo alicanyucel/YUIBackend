@@ -1,11 +1,10 @@
 using MassTransit;
 using MyProject.Application.Abstractions.Messaging;
 
-namespace MyProject.Infrastructure.Messaging
+namespace MyProject.Infrastructure.Messaging;
+
+internal sealed class EventBus(IBus bus) : IEventBus
 {
-    internal sealed class EventBus(IBus bus) : IEventBus
-    {
-        public async Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class
-            => await bus.Publish(message, cancellationToken);
-    }
+    public async Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class
+        => await bus.Publish(message, cancellationToken);
 }

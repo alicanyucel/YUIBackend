@@ -1,7 +1,6 @@
-namespace MyProject.Application.Abstractions.Messaging
+namespace MyProject.Application.Abstractions.Messaging;
+
+public interface IEventBus
 {
-    public interface IEventBus
-    {
-        Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class;
-    }
+    Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class;
 }

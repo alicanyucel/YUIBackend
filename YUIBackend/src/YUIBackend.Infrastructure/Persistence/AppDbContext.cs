@@ -4,54 +4,53 @@ using MyProject.Application.Abstractions.MultiTenancy;
 using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 
-namespace MyProject.Infrastructure.Persistence
+namespace MyProject.Infrastructure.Persistence;
+
+public sealed class AppDbContext(
+    DbContextOptions<AppDbContext> options,
+    IPublisher publisher,
+    ITenantService tenantService) : DbContext(options), IUnitOfWork
 {
-    public sealed class AppDbContext(
-        DbContextOptions<AppDbContext> options,
-        IPublisher publisher,
-        ITenantService tenantService) : DbContext(options), IUnitOfWork
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<FinancialTransaction> FinancialTransactions => Set<FinancialTransaction>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        public DbSet<Product> Products => Set<Product>();
-        public DbSet<Customer> Customers => Set<Customer>();
-        public DbSet<Account> Accounts => Set<Account>();
-        public DbSet<FinancialTransaction> FinancialTransactions => Set<FinancialTransaction>();
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        // Multi-tenant global query filter
+        var tenantId = tenantService.GetCurrentTenantId();
+        if (!string.IsNullOrEmpty(tenantId))
         {
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+            modelBuilder.Entity<Product>().HasQueryFilter(p => p.TenantId == tenantId);
+            modelBuilder.Entity<Customer>().HasQueryFilter(customer => customer.TenantId == tenantId);
+            modelBuilder.Entity<Account>().HasQueryFilter(account => account.TenantId == tenantId);
+            modelBuilder.Entity<FinancialTransaction>().HasQueryFilter(transaction => transaction.TenantId == tenantId);
+        }
 
-            // Multi-tenant global query filter
-            var tenantId = tenantService.GetCurrentTenantId();
-            if (!string.IsNullOrEmpty(tenantId))
+        base.OnModelCreating(modelBuilder);
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        // Publish domain events before saving
+        var domainEvents = ChangeTracker.Entries<Entity>()
+            .Select(e => e.Entity)
+            .SelectMany(e =>
             {
-                modelBuilder.Entity<Product>().HasQueryFilter(p => p.TenantId == tenantId);
-                modelBuilder.Entity<Customer>().HasQueryFilter(customer => customer.TenantId == tenantId);
-                modelBuilder.Entity<Account>().HasQueryFilter(account => account.TenantId == tenantId);
-                modelBuilder.Entity<FinancialTransaction>().HasQueryFilter(transaction => transaction.TenantId == tenantId);
-            }
+                var events = e.DomainEvents.ToList();
+                e.ClearDomainEvents();
+                return events;
+            })
+            .ToList();
 
-            base.OnModelCreating(modelBuilder);
-        }
+        var result = await base.SaveChangesAsync(cancellationToken);
 
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            // Publish domain events before saving
-            var domainEvents = ChangeTracker.Entries<Entity>()
-                .Select(e => e.Entity)
-                .SelectMany(e =>
-                {
-                    var events = e.DomainEvents.ToList();
-                    e.ClearDomainEvents();
-                    return events;
-                })
-                .ToList();
+        foreach (var domainEvent in domainEvents)
+            await publisher.Publish(domainEvent, cancellationToken);
 
-            var result = await base.SaveChangesAsync(cancellationToken);
-
-            foreach (var domainEvent in domainEvents)
-                await publisher.Publish(domainEvent, cancellationToken);
-
-            return result;
-        }
+        return result;
     }
 }

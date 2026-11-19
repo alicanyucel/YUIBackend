@@ -1,7 +1,6 @@
-namespace MyProject.Application.Abstractions.MultiTenancy
+namespace MyProject.Application.Abstractions.MultiTenancy;
+
+public interface ITenantService
 {
-    public interface ITenantService
-    {
-        string? GetCurrentTenantId();
-    }
+    string? GetCurrentTenantId();
 }

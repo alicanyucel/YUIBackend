@@ -1,9 +1,8 @@
 using MyProject.Domain.Abstractions;
 
-namespace MyProject.Domain.Repositories
+namespace MyProject.Domain.Repositories;
+
+public interface IProductRepository : IRepository<Entities.Product>
 {
-    public interface IProductRepository : IRepository<Entities.Product>
-    {
-        Task<IEnumerable<Entities.Product>> GetByTenantAsync(string tenantId, CancellationToken cancellationToken = default);
-    }
+    Task<IEnumerable<Entities.Product>> GetByTenantAsync(string tenantId, CancellationToken cancellationToken = default);
 }

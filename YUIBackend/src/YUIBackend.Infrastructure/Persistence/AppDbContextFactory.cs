@@ -5,65 +5,66 @@ using Microsoft.Extensions.Configuration;
 using MyProject.Application.Abstractions.MultiTenancy;
 using MyProject.Domain.Entities;
 
-namespace MyProject.Infrastructure.Persistence
+namespace MyProject.Infrastructure.Persistence;
+
+public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
-    public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
+    public AppDbContext CreateDbContext(string[] args)
     {
-        public AppDbContext CreateDbContext(string[] args)
+        var searchDirectory = new DirectoryInfo(Directory.GetCurrentDirectory());
+        string? webApiDirectory = null;
+
+        while (searchDirectory is not null)
         {
-            var searchDirectory = new DirectoryInfo(Directory.GetCurrentDirectory());
-            string? webApiDirectory = null;
-
-            while (searchDirectory is not null)
+            var candidate = Path.Combine(searchDirectory.FullName, "YUIBackend", "src", "YUIBackend.WebAPI");
+            if (File.Exists(Path.Combine(candidate, "appsettings.json")))
             {
-                var candidate = Path.Combine(searchDirectory.FullName, "YUIBackend", "src", "YUIBackend.WebAPI");
-                if (File.Exists(Path.Combine(candidate, "appsettings.json")))
-                {
-                    webApiDirectory = candidate;
-                    break;
-                }
-
-                candidate = Path.Combine(searchDirectory.FullName, "src", "YUIBackend.WebAPI");
-                if (File.Exists(Path.Combine(candidate, "appsettings.json")))
-                {
-                    webApiDirectory = candidate;
-                    break;
-                }
-
-                searchDirectory = searchDirectory.Parent;
+                webApiDirectory = candidate;
+                break;
             }
 
-            if (webApiDirectory is null)
+            candidate = Path.Combine(searchDirectory.FullName, "src", "YUIBackend.WebAPI");
+            if (File.Exists(Path.Combine(candidate, "appsettings.json")))
             {
-                throw new InvalidOperationException("YUIBackend.WebAPI/appsettings.json could not be found.");
+                webApiDirectory = candidate;
+                break;
             }
 
-            var config = new ConfigurationBuilder()
-                .SetBasePath(webApiDirectory)
-                .AddJsonFile("appsettings.json", optional: false)
-                .Build();
-
-            var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-            optionsBuilder.UseSqlServer(config.GetConnectionString("SqlServer"));
-
-            // Design-time için stub implementasyonlar
-            var publisher = new NoOpPublisher();
-            var tenantService = new NoOpTenantService();
-
-            return new AppDbContext(optionsBuilder.Options, publisher, tenantService);
+            searchDirectory = searchDirectory.Parent;
         }
-    }
 
-    // Design-time stub — çalışma zamanında gerçek implementasyonlar inject edilir
-    file sealed class NoOpPublisher : IPublisher
-    {
-        public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification => Task.CompletedTask;
-    }
+        if (webApiDirectory is null)
+        {
+            throw new InvalidOperationException("YUIBackend.WebAPI/appsettings.json could not be found.");
+        }
 
-    file sealed class NoOpTenantService : ITenantService
-    {
-        public string? GetCurrentTenantId() => null;
+        var config = new ConfigurationBuilder()
+            .SetBasePath(webApiDirectory)
+            .AddJsonFile("appsettings.json", optional: false)
+            .AddUserSecrets("ab477883-460d-44ca-8025-d5c20255f6a4")
+            .AddEnvironmentVariables()
+            .Build();
+
+        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+        optionsBuilder.UseSqlServer(config.GetConnectionString("SqlServer"));
+
+        // Design-time için stub implementasyonlar
+        var publisher = new NoOpPublisher();
+        var tenantService = new NoOpTenantService();
+
+        return new AppDbContext(optionsBuilder.Options, publisher, tenantService);
     }
+}
+
+// Design-time stub — çalışma zamanında gerçek implementasyonlar inject edilir
+file sealed class NoOpPublisher : IPublisher
+{
+    public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        where TNotification : INotification => Task.CompletedTask;
+}
+
+file sealed class NoOpTenantService : ITenantService
+{
+    public string? GetCurrentTenantId() => null;
 }

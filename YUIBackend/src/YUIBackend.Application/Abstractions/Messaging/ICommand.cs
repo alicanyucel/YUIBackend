@@ -1,9 +1,8 @@
 using MediatR;
 using MyProject.Domain.Abstractions;
 
-namespace MyProject.Application.Abstractions.Messaging
-{
-    public interface ICommand : IRequest<Result>;
-    public interface ICommand<TResponse> : IRequest<Result<TResponse>>;
-    public interface IQuery<TResponse> : IRequest<Result<TResponse>>;
-}
+namespace MyProject.Application.Abstractions.Messaging;
+
+public interface ICommand : IRequest<Result>;
+public interface ICommand<TResponse> : IRequest<Result<TResponse>>;
+public interface IQuery<TResponse> : IRequest<Result<TResponse>>;

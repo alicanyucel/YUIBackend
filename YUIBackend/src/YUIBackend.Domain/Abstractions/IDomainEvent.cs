@@ -1,8 +1,7 @@
-namespace MyProject.Domain.Abstractions
+namespace MyProject.Domain.Abstractions;
+
+public interface IDomainEvent
 {
-    public interface IDomainEvent
-    {
-        Guid EventId { get; }
-        DateTime OccurredOn { get; }
-    }
+    Guid EventId { get; }
+    DateTime OccurredOn { get; }
 }

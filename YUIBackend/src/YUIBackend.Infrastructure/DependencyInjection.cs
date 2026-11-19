@@ -16,56 +16,55 @@ using MyProject.Infrastructure.Persistence;
 using MyProject.Infrastructure.Repositories;
 using StackExchange.Redis;
 
-namespace MyProject.Infrastructure
+namespace MyProject.Infrastructure;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        // EF Core
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("SqlServer")));
+
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+
+        // Repositories
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IFinancialTransactionRepository, FinancialTransactionRepository>();
+
+        // Multi-Tenancy
+        services.AddHttpContextAccessor();
+        services.AddScoped<ITenantService, TenantService>();
+
+        // Redis Cache
+        services.AddSingleton<IConnectionMultiplexer>(_ =>
+            ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")!));
+        services.AddScoped<ICacheService, RedisCacheService>();
+
+        // MassTransit + RabbitMQ + Saga
+        services.AddMassTransit(x =>
         {
-            // EF Core
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("SqlServer")));
+            x.AddConsumer<ProductCreatedConsumer>();
 
-            services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+            x.AddSagaStateMachine<OrderStateMachine, OrderState>()
+                .InMemoryRepository();
 
-            // Repositories
-            services.AddScoped<IProductRepository, ProductRepository>();
-            services.AddScoped<ICustomerRepository, CustomerRepository>();
-            services.AddScoped<IAccountRepository, AccountRepository>();
-            services.AddScoped<IFinancialTransactionRepository, FinancialTransactionRepository>();
-
-            // Multi-Tenancy
-            services.AddHttpContextAccessor();
-            services.AddScoped<ITenantService, TenantService>();
-
-            // Redis Cache
-            services.AddSingleton<IConnectionMultiplexer>(_ =>
-                ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")!));
-            services.AddScoped<ICacheService, RedisCacheService>();
-
-            // MassTransit + RabbitMQ + Saga
-            services.AddMassTransit(x =>
+            x.UsingRabbitMq((ctx, cfg) =>
             {
-                x.AddConsumer<ProductCreatedConsumer>();
+                cfg.Host(configuration.GetConnectionString("RabbitMQ"));
 
-                x.AddSagaStateMachine<OrderStateMachine, OrderState>()
-                    .InMemoryRepository();
+                cfg.ReceiveEndpoint("product-created", e =>
+                    e.ConfigureConsumer<ProductCreatedConsumer>(ctx));
 
-                x.UsingRabbitMq((ctx, cfg) =>
-                {
-                    cfg.Host(configuration.GetConnectionString("RabbitMQ"));
-
-                    cfg.ReceiveEndpoint("product-created", e =>
-                        e.ConfigureConsumer<ProductCreatedConsumer>(ctx));
-
-                    cfg.ReceiveEndpoint("order-saga", e =>
-                        e.ConfigureSaga<OrderState>(ctx));
-                });
+                cfg.ReceiveEndpoint("order-saga", e =>
+                    e.ConfigureSaga<OrderState>(ctx));
             });
+        });
 
-            services.AddScoped<IEventBus, EventBus>();
+        services.AddScoped<IEventBus, EventBus>();
 
-            return services;
-        }
+        return services;
     }
 }

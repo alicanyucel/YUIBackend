@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using MyProject.Application;
 using MyProject.Infrastructure;
 using MyProject.Infrastructure.Persistence;
@@ -36,7 +37,15 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => options.SwaggerDoc("v1", new OpenApiInfo
+{
+    Title = "YUIBackend API",
+    Version = "v1",
+    Contact = new OpenApiContact
+    {
+        Email = "yucelalicandan@hotmail.com"
+    }
+}));
 
 // ── JWT Auth ──────────────────────────────────────────────────────────────
 builder.Services.AddAuthentication("Bearer")

@@ -9,256 +9,255 @@ using MyProject.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace YUIBackend.Infrastructure.Persistence.Migrations
+namespace YUIBackend.Infrastructure.Persistence.Migrations;
+
+[DbContext(typeof(AppDbContext))]
+[Migration("20261119113836_AddBankingEntities")]
+partial class AddBankingEntities
 {
-    [DbContext(typeof(AppDbContext))]
-    [Migration("20261119113836_AddBankingEntities")]
-    partial class AddBankingEntities
+    /// <inheritdoc />
+    protected override void BuildTargetModel(ModelBuilder modelBuilder)
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
-        {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.6")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+        modelBuilder
+            .HasAnnotation("ProductVersion", "10.0.6")
+            .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+        SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+        modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AccountNumber")
-                        .IsRequired()
-                        .HasMaxLength(34)
-                        .HasColumnType("nvarchar(34)");
+                b.Property<string>("AccountNumber")
+                    .IsRequired()
+                    .HasMaxLength(34)
+                    .HasColumnType("nvarchar(34)");
 
-                    b.Property<decimal>("Balance")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                b.Property<decimal>("Balance")
+                    .HasPrecision(18, 2)
+                    .HasColumnType("decimal(18,2)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("CurrencyCode")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(3)");
+                b.Property<string>("CurrencyCode")
+                    .IsRequired()
+                    .HasMaxLength(3)
+                    .IsUnicode(false)
+                    .HasColumnType("varchar(3)");
 
-                    b.Property<Guid>("CustomerId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("CustomerId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("nvarchar(16)");
 
-                    b.Property<string>("TenantId")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("TenantId")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("AccountNumber")
-                        .IsUnique();
+                b.HasIndex("AccountNumber")
+                    .IsUnique();
 
-                    b.HasIndex("CustomerId");
+                b.HasIndex("CustomerId");
 
-                    b.ToTable("Accounts");
-                });
+                b.ToTable("Accounts");
+            });
 
-            modelBuilder.Entity("MyProject.Domain.Entities.Customer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+        modelBuilder.Entity("MyProject.Domain.Entities.Customer", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(254)
-                        .HasColumnType("nvarchar(254)");
+                b.Property<string>("Email")
+                    .IsRequired()
+                    .HasMaxLength(254)
+                    .HasColumnType("nvarchar(254)");
 
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("FirstName")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                b.Property<bool>("IsActive")
+                    .HasColumnType("bit");
 
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("LastName")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("PhoneNumber")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                b.Property<string>("PhoneNumber")
+                    .HasMaxLength(30)
+                    .HasColumnType("nvarchar(30)");
 
-                    b.Property<string>("TenantId")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("TenantId")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
+                b.HasIndex("Email")
+                    .IsUnique();
 
-                    b.ToTable("Customers");
-                });
+                b.ToTable("Customers");
+            });
 
-            modelBuilder.Entity("MyProject.Domain.Entities.FinancialTransaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+        modelBuilder.Entity("MyProject.Domain.Entities.FinancialTransaction", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                b.Property<decimal>("Amount")
+                    .HasPrecision(18, 2)
+                    .HasColumnType("decimal(18,2)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                b.Property<string>("Description")
+                    .HasMaxLength(500)
+                    .HasColumnType("nvarchar(500)");
 
-                    b.Property<Guid?>("DestinationAccountId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("DestinationAccountId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("OccurredAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("SourceAccountId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("SourceAccountId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("nvarchar(16)");
 
-                    b.Property<string>("TenantId")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("TenantId")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("TransactionNumber")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
+                b.Property<string>("TransactionNumber")
+                    .IsRequired()
+                    .HasMaxLength(64)
+                    .HasColumnType("nvarchar(64)");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                b.Property<string>("Type")
+                    .IsRequired()
+                    .HasMaxLength(16)
+                    .HasColumnType("nvarchar(16)");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("TransactionNumber")
-                        .IsUnique();
+                b.HasIndex("TransactionNumber")
+                    .IsUnique();
 
-                    b.HasIndex("DestinationAccountId", "OccurredAt");
+                b.HasIndex("DestinationAccountId", "OccurredAt");
 
-                    b.HasIndex("SourceAccountId", "OccurredAt");
+                b.HasIndex("SourceAccountId", "OccurredAt");
 
-                    b.HasIndex("Type", "Status", "OccurredAt");
+                b.HasIndex("Type", "Status", "OccurredAt");
 
-                    b.ToTable("FinancialTransactions");
-                });
+                b.ToTable("FinancialTransactions");
+            });
 
-            modelBuilder.Entity("MyProject.Domain.Entities.Product", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+        modelBuilder.Entity("MyProject.Domain.Entities.Product", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                b.Property<string>("Description")
+                    .IsRequired()
+                    .HasMaxLength(1000)
+                    .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
 
-                    b.Property<decimal>("Price")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                b.Property<decimal>("Price")
+                    .HasPrecision(18, 2)
+                    .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("Stock")
-                        .HasColumnType("int");
+                b.Property<int>("Stock")
+                    .HasColumnType("int");
 
-                    b.Property<string>("TenantId")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("TenantId")
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("UpdatedAt")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                b.HasIndex("TenantId");
 
-                    b.ToTable("Products");
-                });
+                b.ToTable("Products");
+            });
 
-            modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
-                {
-                    b.HasOne("MyProject.Domain.Entities.Customer", "Customer")
-                        .WithMany("Accounts")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+        modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
+            {
+                b.HasOne("MyProject.Domain.Entities.Customer", "Customer")
+                    .WithMany("Accounts")
+                    .HasForeignKey("CustomerId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                    b.Navigation("Customer");
-                });
+                b.Navigation("Customer");
+            });
 
-            modelBuilder.Entity("MyProject.Domain.Entities.FinancialTransaction", b =>
-                {
-                    b.HasOne("MyProject.Domain.Entities.Account", "DestinationAccount")
-                        .WithMany("DestinationTransactions")
-                        .HasForeignKey("DestinationAccountId")
-                        .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity("MyProject.Domain.Entities.FinancialTransaction", b =>
+            {
+                b.HasOne("MyProject.Domain.Entities.Account", "DestinationAccount")
+                    .WithMany("DestinationTransactions")
+                    .HasForeignKey("DestinationAccountId")
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("MyProject.Domain.Entities.Account", "SourceAccount")
-                        .WithMany("SourceTransactions")
-                        .HasForeignKey("SourceAccountId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne("MyProject.Domain.Entities.Account", "SourceAccount")
+                    .WithMany("SourceTransactions")
+                    .HasForeignKey("SourceAccountId")
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                    b.Navigation("DestinationAccount");
+                b.Navigation("DestinationAccount");
 
-                    b.Navigation("SourceAccount");
-                });
+                b.Navigation("SourceAccount");
+            });
 
-            modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
-                {
-                    b.Navigation("DestinationTransactions");
+        modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
+            {
+                b.Navigation("DestinationTransactions");
 
-                    b.Navigation("SourceTransactions");
-                });
+                b.Navigation("SourceTransactions");
+            });
 
-            modelBuilder.Entity("MyProject.Domain.Entities.Customer", b =>
-                {
-                    b.Navigation("Accounts");
-                });
+        modelBuilder.Entity("MyProject.Domain.Entities.Customer", b =>
+            {
+                b.Navigation("Accounts");
+            });
 #pragma warning restore 612, 618
-        }
     }
 }
