@@ -21,11 +21,11 @@ internal sealed class FinancialTransactionConfiguration : IEntityTypeConfigurati
             .HasPrecision(18, 2);
 
         builder.Property(transaction => transaction.Type)
-            .HasConversion<string>()
+            .HasConversion(type => type.Name, name => FinancialTransactionType.FromName(name))
             .HasMaxLength(16);
 
         builder.Property(transaction => transaction.Status)
-            .HasConversion<string>()
+            .HasConversion(status => status.Name, name => FinancialTransactionStatus.FromName(name))
             .HasMaxLength(16);
 
         builder.Property(transaction => transaction.Description)

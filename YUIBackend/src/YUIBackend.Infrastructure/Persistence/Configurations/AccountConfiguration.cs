@@ -26,7 +26,7 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             .IsUnicode(false);
 
         builder.Property(account => account.Status)
-            .HasConversion<string>()
+            .HasConversion(status => status.Name, name => AccountStatus.FromName(name))
             .HasMaxLength(16);
 
         builder.HasIndex(account => account.CustomerId);
