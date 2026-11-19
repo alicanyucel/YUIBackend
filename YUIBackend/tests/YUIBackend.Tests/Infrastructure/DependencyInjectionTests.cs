@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyProject.Application;
@@ -34,8 +35,17 @@ public sealed class DependencyInjectionTests
         using var scope = provider.CreateScope();
 
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var legacyPageSql = context.Customers.AsNoTracking()
+            .OrderBy(customer => customer.CreatedAt)
+            .ThenBy(customer => customer.Id)
+            .Take(40)
+            .OrderByDescending(customer => customer.CreatedAt)
+            .ThenByDescending(customer => customer.Id)
+            .Take(20)
+            .ToQueryString();
 
         context.Should().NotBeNull();
+        legacyPageSql.Should().Contain("TOP").And.NotContain("OFFSET");
         services.Should().ContainSingle(descriptor =>
             descriptor.ServiceType == typeof(IFinancialOperationService));
         services.Should().NotContain(descriptor =>

@@ -36,14 +36,15 @@ internal sealed class FinancialTransactionRepository(AppDbContext context)
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = DbSet.AsNoTracking()
-            .OrderByDescending(transaction => transaction.OccurredAt)
-            .ThenByDescending(transaction => transaction.Id);
-        var totalCount = await query.CountAsync(cancellationToken);
-        var items = await query.Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-        return new PagedResult<FinancialTransaction>(items, totalCount, pageNumber, pageSize);
+        var query = DbSet.AsNoTracking();
+        return await query.ToPagedResultAsync(
+            source => source.OrderByDescending(transaction => transaction.OccurredAt)
+                .ThenByDescending(transaction => transaction.Id),
+            source => source.OrderBy(transaction => transaction.OccurredAt)
+                .ThenBy(transaction => transaction.Id),
+            pageNumber,
+            pageSize,
+            cancellationToken);
     }
 
     public async Task<PagedResult<FinancialTransaction>> GetFilteredPageAsync(
@@ -53,14 +54,23 @@ internal sealed class FinancialTransactionRepository(AppDbContext context)
         CancellationToken cancellationToken = default)
     {
         var query = ApplyFilter(DbSet.AsNoTracking(), filter);
-        var totalCount = await query.CountAsync(cancellationToken);
-        var orderedQuery = filter.Descending
-            ? query.OrderByDescending(transaction => transaction.OccurredAt).ThenByDescending(transaction => transaction.Id)
-            : query.OrderBy(transaction => transaction.OccurredAt).ThenBy(transaction => transaction.Id);
-        var items = await orderedQuery.Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-        return new PagedResult<FinancialTransaction>(items, totalCount, pageNumber, pageSize);
+        return filter.Descending
+            ? await query.ToPagedResultAsync(
+                source => source.OrderByDescending(transaction => transaction.OccurredAt)
+                    .ThenByDescending(transaction => transaction.Id),
+                source => source.OrderBy(transaction => transaction.OccurredAt)
+                    .ThenBy(transaction => transaction.Id),
+                pageNumber,
+                pageSize,
+                cancellationToken)
+            : await query.ToPagedResultAsync(
+                source => source.OrderBy(transaction => transaction.OccurredAt)
+                    .ThenBy(transaction => transaction.Id),
+                source => source.OrderByDescending(transaction => transaction.OccurredAt)
+                    .ThenByDescending(transaction => transaction.Id),
+                pageNumber,
+                pageSize,
+                cancellationToken);
     }
 
     public Task<FinancialTransaction?> GetByIdempotencyKeyAsync(

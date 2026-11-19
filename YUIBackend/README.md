@@ -50,7 +50,7 @@
 ## Gereksinimler
 
 - .NET 10 SDK
-- SQL Server 2012 veya üzeri (sayfalı sorgular `OFFSET/FETCH` kullanır; SQL Server 2022 önerilir; bağlantı dizesi User Secrets veya ortam değişkeninde tanımlanmalı)
+- SQL Server 2008 R2 veya üzeri (sayfalama, eski sürümlerle uyumlu `TOP` sorgularıyla yapılır; SQL Server 2022 önerilir; bağlantı dizesi User Secrets veya ortam değişkeninde tanımlanmalı)
 - Redis (cache için; erişilemiyorsa API veritabanından devam eder) ve RabbitMQ (transactional outbox bildirimlerinin kuyruklara iletilmesi için)
 - EF CLI: `dotnet tool install --global dotnet-ef` (zaten kuruluysa yeniden yüklemeyin)
 

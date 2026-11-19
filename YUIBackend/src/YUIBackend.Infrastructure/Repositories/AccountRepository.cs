@@ -23,9 +23,11 @@ internal sealed class AccountRepository(AppDbContext context)
         CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsNoTracking().Where(account => account.CustomerId == customerId);
-        var totalCount = await query.CountAsync(cancellationToken);
-        var items = await query.OrderBy(account => account.CreatedAt).ThenBy(account => account.Id)
-            .Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
-        return new PagedResult<Account>(items, totalCount, pageNumber, pageSize);
+        return await query.ToPagedResultAsync(
+            source => source.OrderBy(account => account.CreatedAt).ThenBy(account => account.Id),
+            source => source.OrderByDescending(account => account.CreatedAt).ThenByDescending(account => account.Id),
+            pageNumber,
+            pageSize,
+            cancellationToken);
     }
 }

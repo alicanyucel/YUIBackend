@@ -21,15 +21,13 @@ internal abstract class Repository<T>(AppDbContext context) : IRepository<T>
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = DbSet.AsNoTracking()
-            .OrderBy(entity => entity.CreatedAt)
-            .ThenBy(entity => entity.Id);
-        var totalCount = await query.CountAsync(cancellationToken);
-        var items = await query.Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        return new PagedResult<T>(items, totalCount, pageNumber, pageSize);
+        var query = DbSet.AsNoTracking();
+        return await query.ToPagedResultAsync(
+            source => source.OrderBy(entity => entity.CreatedAt).ThenBy(entity => entity.Id),
+            source => source.OrderByDescending(entity => entity.CreatedAt).ThenByDescending(entity => entity.Id),
+            pageNumber,
+            pageSize,
+            cancellationToken);
     }
 
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
