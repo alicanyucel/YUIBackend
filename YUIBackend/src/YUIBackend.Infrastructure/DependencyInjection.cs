@@ -38,9 +38,15 @@ public static class DependencyInjection
         services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")!));
 
-        // MassTransit + RabbitMQ + Saga
+        // MassTransit + EF transactional outbox + RabbitMQ + Saga
         services.AddMassTransit(x =>
         {
+            x.AddEntityFrameworkOutbox<AppDbContext>(options =>
+            {
+                options.UseSqlServer();
+                options.UseBusOutbox();
+            });
+
             x.AddConsumer<ProductCreatedConsumer>();
 
             x.AddSagaStateMachine<OrderStateMachine, OrderState>()
@@ -51,10 +57,16 @@ public static class DependencyInjection
                 cfg.Host(configuration.GetConnectionString("RabbitMQ"));
 
                 cfg.ReceiveEndpoint("product-created", e =>
-                    e.ConfigureConsumer<ProductCreatedConsumer>(ctx));
+                {
+                    e.UseEntityFrameworkOutbox<AppDbContext>(ctx);
+                    e.ConfigureConsumer<ProductCreatedConsumer>(ctx);
+                });
 
                 cfg.ReceiveEndpoint("order-saga", e =>
-                    e.ConfigureSaga<OrderState>(ctx));
+                {
+                    e.UseEntityFrameworkOutbox<AppDbContext>(ctx);
+                    e.ConfigureSaga<OrderState>(ctx);
+                });
             });
         });
 

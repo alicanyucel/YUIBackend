@@ -8,253 +8,436 @@ using MyProject.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace MyProject.Infrastructure.Persistence.Migrations;
-
-[DbContext(typeof(AppDbContext))]
-partial class AppDbContextModelSnapshot : ModelSnapshot
+namespace MyProject.Infrastructure.Persistence.Migrations
 {
-    protected override void BuildModel(ModelBuilder modelBuilder)
+    [DbContext(typeof(AppDbContext))]
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
+        protected override void BuildModel(ModelBuilder modelBuilder)
+        {
 #pragma warning disable 612, 618
-        modelBuilder
-            .HasAnnotation("ProductVersion", "10.0.6")
-            .HasAnnotation("Relational:MaxIdentifierLength", 128);
+            modelBuilder
+                .HasAnnotation("ProductVersion", "10.0.6")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-        SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-        modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
-            {
-                b.Property<Guid>("Id")
-                    .ValueGeneratedOnAdd()
-                    .HasColumnType("uniqueidentifier");
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.InboxState", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
 
-                b.Property<string>("AccountNumber")
-                    .IsRequired()
-                    .HasMaxLength(34)
-                    .HasColumnType("nvarchar(34)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                b.Property<decimal>("Balance")
-                    .HasPrecision(18, 2)
-                    .HasColumnType("decimal(18,2)");
+                    b.Property<DateTime?>("Consumed")
+                        .HasColumnType("datetime2");
 
-                b.Property<DateTime>("CreatedAt")
-                    .HasColumnType("datetime2");
+                    b.Property<Guid>("ConsumerId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<string>("CurrencyCode")
-                    .IsRequired()
-                    .HasMaxLength(3)
-                    .IsUnicode(false)
-                    .HasColumnType("varchar(3)");
+                    b.Property<DateTime?>("Delivered")
+                        .HasColumnType("datetime2");
 
-                b.Property<Guid>("CustomerId")
-                    .HasColumnType("uniqueidentifier");
+                    b.Property<DateTime?>("ExpirationTime")
+                        .HasColumnType("datetime2");
 
-                b.Property<string>("Status")
-                    .IsRequired()
-                    .HasMaxLength(16)
-                    .HasColumnType("nvarchar(16)");
+                    b.Property<long?>("LastSequenceNumber")
+                        .HasColumnType("bigint");
 
-                b.Property<string>("TenantId")
-                    .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("LockId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<DateTime?>("UpdatedAt")
-                    .HasColumnType("datetime2");
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.HasKey("Id");
+                    b.Property<int>("ReceiveCount")
+                        .HasColumnType("int");
 
-                b.HasIndex("AccountNumber")
-                    .IsUnique();
+                    b.Property<DateTime>("Received")
+                        .HasColumnType("datetime2");
 
-                b.HasIndex("CustomerId");
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
-                b.ToTable("Accounts");
-            });
+                    b.HasKey("Id");
 
-        modelBuilder.Entity("MyProject.Domain.Entities.Customer", b =>
-            {
-                b.Property<Guid>("Id")
-                    .ValueGeneratedOnAdd()
-                    .HasColumnType("uniqueidentifier");
+                    b.HasIndex("Delivered");
 
-                b.Property<DateTime>("CreatedAt")
-                    .HasColumnType("datetime2");
+                    b.ToTable("InboxState");
+                });
 
-                b.Property<string>("Email")
-                    .IsRequired()
-                    .HasMaxLength(254)
-                    .HasColumnType("nvarchar(254)");
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
+                {
+                    b.Property<long>("SequenceNumber")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
 
-                b.Property<string>("FirstName")
-                    .IsRequired()
-                    .HasMaxLength(100)
-                    .HasColumnType("nvarchar(100)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("SequenceNumber"));
 
-                b.Property<bool>("IsActive")
-                    .HasColumnType("bit");
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                b.Property<string>("LastName")
-                    .IsRequired()
-                    .HasMaxLength(100)
-                    .HasColumnType("nvarchar(100)");
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
-                b.Property<string>("PhoneNumber")
-                    .HasMaxLength(30)
-                    .HasColumnType("nvarchar(30)");
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<string>("TenantId")
-                    .HasColumnType("nvarchar(max)");
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<DateTime?>("UpdatedAt")
-                    .HasColumnType("datetime2");
+                    b.Property<string>("DestinationAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
-                b.HasKey("Id");
+                    b.Property<DateTime?>("EnqueueTime")
+                        .HasColumnType("datetime2");
 
-                b.HasIndex("Email")
-                    .IsUnique();
+                    b.Property<DateTime?>("ExpirationTime")
+                        .HasColumnType("datetime2");
 
-                b.ToTable("Customers");
-            });
+                    b.Property<string>("FaultAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
-        modelBuilder.Entity("MyProject.Domain.Entities.FinancialTransaction", b =>
-            {
-                b.Property<Guid>("Id")
-                    .ValueGeneratedOnAdd()
-                    .HasColumnType("uniqueidentifier");
+                    b.Property<string>("Headers")
+                        .HasColumnType("nvarchar(max)");
 
-                b.Property<decimal>("Amount")
-                    .HasPrecision(18, 2)
-                    .HasColumnType("decimal(18,2)");
+                    b.Property<Guid?>("InboxConsumerId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<DateTime>("CreatedAt")
-                    .HasColumnType("datetime2");
+                    b.Property<Guid?>("InboxMessageId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<string>("Description")
-                    .HasMaxLength(500)
-                    .HasColumnType("nvarchar(500)");
+                    b.Property<Guid?>("InitiatorId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<Guid?>("DestinationAccountId")
-                    .HasColumnType("uniqueidentifier");
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<DateTime>("OccurredAt")
-                    .HasColumnType("datetime2");
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                b.Property<Guid?>("SourceAccountId")
-                    .HasColumnType("uniqueidentifier");
+                    b.Property<Guid?>("OutboxId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<string>("Status")
-                    .IsRequired()
-                    .HasMaxLength(16)
-                    .HasColumnType("nvarchar(16)");
+                    b.Property<string>("Properties")
+                        .HasColumnType("nvarchar(max)");
 
-                b.Property<string>("TenantId")
-                    .HasColumnType("nvarchar(max)");
+                    b.Property<Guid?>("RequestId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<string>("TransactionNumber")
-                    .IsRequired()
-                    .HasMaxLength(64)
-                    .HasColumnType("nvarchar(64)");
+                    b.Property<string>("ResponseAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
-                b.Property<string>("Type")
-                    .IsRequired()
-                    .HasMaxLength(16)
-                    .HasColumnType("nvarchar(16)");
+                    b.Property<DateTime>("SentTime")
+                        .HasColumnType("datetime2");
 
-                b.Property<DateTime?>("UpdatedAt")
-                    .HasColumnType("datetime2");
+                    b.Property<string>("SourceAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
-                b.HasKey("Id");
+                    b.HasKey("SequenceNumber");
 
-                b.HasIndex("TransactionNumber")
-                    .IsUnique();
+                    b.HasIndex("EnqueueTime");
 
-                b.HasIndex("DestinationAccountId", "OccurredAt");
+                    b.HasIndex("ExpirationTime");
 
-                b.HasIndex("SourceAccountId", "OccurredAt");
+                    b.HasIndex("OutboxId", "SequenceNumber")
+                        .IsUnique()
+                        .HasFilter("[OutboxId] IS NOT NULL");
 
-                b.HasIndex("Type", "Status", "OccurredAt");
+                    b.HasIndex("InboxMessageId", "InboxConsumerId", "SequenceNumber")
+                        .IsUnique()
+                        .HasFilter("[InboxMessageId] IS NOT NULL AND [InboxConsumerId] IS NOT NULL");
 
-                b.ToTable("FinancialTransactions");
-            });
+                    b.ToTable("OutboxMessage");
+                });
 
-        modelBuilder.Entity("MyProject.Domain.Entities.Product", b =>
-            {
-                b.Property<Guid>("Id")
-                    .ValueGeneratedOnAdd()
-                    .HasColumnType("uniqueidentifier");
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxState", b =>
+                {
+                    b.Property<Guid>("OutboxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<DateTime>("CreatedAt")
-                    .HasColumnType("datetime2");
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
 
-                b.Property<string>("Description")
-                    .IsRequired()
-                    .HasMaxLength(1000)
-                    .HasColumnType("nvarchar(1000)");
+                    b.Property<DateTime?>("Delivered")
+                        .HasColumnType("datetime2");
 
-                b.Property<string>("Name")
-                    .IsRequired()
-                    .HasMaxLength(200)
-                    .HasColumnType("nvarchar(200)");
+                    b.Property<long?>("LastSequenceNumber")
+                        .HasColumnType("bigint");
 
-                b.Property<decimal>("Price")
-                    .HasPrecision(18, 2)
-                    .HasColumnType("decimal(18,2)");
+                    b.Property<Guid>("LockId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<int>("Stock")
-                    .HasColumnType("int");
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
-                b.Property<string>("TenantId")
-                    .HasMaxLength(100)
-                    .HasColumnType("nvarchar(100)");
+                    b.HasKey("OutboxId");
 
-                b.Property<DateTime?>("UpdatedAt")
-                    .HasColumnType("datetime2");
+                    b.HasIndex("Created");
 
-                b.HasKey("Id");
+                    b.ToTable("OutboxState");
+                });
 
-                b.HasIndex("TenantId");
+            modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
 
-                b.ToTable("Products");
-            });
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasMaxLength(34)
+                        .HasColumnType("nvarchar(34)");
 
-        modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
-            {
-                b.HasOne("MyProject.Domain.Entities.Customer", "Customer")
-                    .WithMany("Accounts")
-                    .HasForeignKey("CustomerId")
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .IsRequired();
+                    b.Property<decimal>("Balance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                b.Navigation("Customer");
-            });
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
-        modelBuilder.Entity("MyProject.Domain.Entities.FinancialTransaction", b =>
-            {
-                b.HasOne("MyProject.Domain.Entities.Account", "DestinationAccount")
-                    .WithMany("DestinationTransactions")
-                    .HasForeignKey("DestinationAccountId")
-                    .OnDelete(DeleteBehavior.Restrict);
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(3)");
 
-                b.HasOne("MyProject.Domain.Entities.Account", "SourceAccount")
-                    .WithMany("SourceTransactions")
-                    .HasForeignKey("SourceAccountId")
-                    .OnDelete(DeleteBehavior.Restrict);
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Navigation("DestinationAccount");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
-                b.Navigation("SourceAccount");
-            });
+                    b.Property<string>("TenantId")
+                        .HasColumnType("nvarchar(max)");
 
-        modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
-            {
-                b.Navigation("DestinationTransactions");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
-                b.Navigation("SourceTransactions");
-            });
+                    b.HasKey("Id");
 
-        modelBuilder.Entity("MyProject.Domain.Entities.Customer", b =>
-            {
-                b.Navigation("Accounts");
-            });
+                    b.HasIndex("AccountNumber")
+                        .IsUnique();
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("Accounts");
+                });
+
+            modelBuilder.Entity("MyProject.Domain.Entities.Customer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("TenantId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("Customers");
+                });
+
+            modelBuilder.Entity("MyProject.Domain.Entities.FinancialTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("DestinationAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("SourceAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("TenantId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TransactionNumber")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransactionNumber")
+                        .IsUnique();
+
+                    b.HasIndex("DestinationAccountId", "OccurredAt");
+
+                    b.HasIndex("SourceAccountId", "OccurredAt");
+
+                    b.HasIndex("Type", "Status", "OccurredAt");
+
+                    b.ToTable("FinancialTransactions");
+                });
+
+            modelBuilder.Entity("MyProject.Domain.Entities.Product", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TenantId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
+                {
+                    b.HasOne("MassTransit.EntityFrameworkCoreIntegration.OutboxState", null)
+                        .WithMany()
+                        .HasForeignKey("OutboxId");
+
+                    b.HasOne("MassTransit.EntityFrameworkCoreIntegration.InboxState", null)
+                        .WithMany()
+                        .HasForeignKey("InboxMessageId", "InboxConsumerId")
+                        .HasPrincipalKey("MessageId", "ConsumerId");
+                });
+
+            modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
+                {
+                    b.HasOne("MyProject.Domain.Entities.Customer", "Customer")
+                        .WithMany("Accounts")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("MyProject.Domain.Entities.FinancialTransaction", b =>
+                {
+                    b.HasOne("MyProject.Domain.Entities.Account", "DestinationAccount")
+                        .WithMany("DestinationTransactions")
+                        .HasForeignKey("DestinationAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MyProject.Domain.Entities.Account", "SourceAccount")
+                        .WithMany("SourceTransactions")
+                        .HasForeignKey("SourceAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("DestinationAccount");
+
+                    b.Navigation("SourceAccount");
+                });
+
+            modelBuilder.Entity("MyProject.Domain.Entities.Account", b =>
+                {
+                    b.Navigation("DestinationTransactions");
+
+                    b.Navigation("SourceTransactions");
+                });
+
+            modelBuilder.Entity("MyProject.Domain.Entities.Customer", b =>
+                {
+                    b.Navigation("Accounts");
+                });
 #pragma warning restore 612, 618
+        }
     }
 }

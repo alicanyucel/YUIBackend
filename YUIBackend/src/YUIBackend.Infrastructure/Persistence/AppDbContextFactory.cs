@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using MyProject.Application.Abstractions.Messaging;
 using MyProject.Application.Abstractions.MultiTenancy;
 using MyProject.Domain.Entities;
 
@@ -50,9 +51,10 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 
         // Design-time için stub implementasyonlar
         var publisher = new NoOpPublisher();
+        var eventBus = new NoOpEventBus();
         var tenantService = new NoOpTenantService();
 
-        return new AppDbContext(optionsBuilder.Options, publisher, tenantService);
+        return new AppDbContext(optionsBuilder.Options, publisher, eventBus, tenantService);
     }
 }
 
@@ -62,6 +64,15 @@ file sealed class NoOpPublisher : IPublisher
     public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
         where TNotification : INotification => Task.CompletedTask;
+}
+
+file sealed class NoOpEventBus : IEventBus
+{
+    public Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class
+        => Task.CompletedTask;
+
+    public Task PublishAsync(object message, Type messageType, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
 }
 
 file sealed class NoOpTenantService : ITenantService

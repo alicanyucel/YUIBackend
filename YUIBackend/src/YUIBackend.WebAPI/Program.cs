@@ -1,12 +1,10 @@
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using MyProject.Application;
 using MyProject.Infrastructure;
-using MyProject.Infrastructure.Persistence;
 using MyProject.WebAPI.Middleware;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -125,12 +123,8 @@ builder.Services.AddProblemDetails();
 // ─────────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── Auto-migrate DB ───────────────────────────────────────────────────────
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
-}
+// Apply database migrations separately with `dotnet ef database update`.
+// This keeps the API and Swagger available while the database is unavailable.
 
 // ── Pipeline ──────────────────────────────────────────────────────────────
 app.UseSerilogRequestLogging();
