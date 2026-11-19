@@ -22,4 +22,15 @@ internal sealed class RedisCacheService(IConnectionMultiplexer redis) : ICacheSe
 
     public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
         => await _db.KeyDeleteAsync(key);
+
+    public async Task<string> GetVersionAsync(string scope, CancellationToken cancellationToken = default)
+    {
+        var version = await _db.StringGetAsync($"api-cache-version:{scope}");
+        return version.IsNullOrEmpty ? "0" : version.ToString();
+    }
+
+    public async Task InvalidateAsync(string scope, CancellationToken cancellationToken = default)
+    {
+        await _db.StringIncrementAsync($"api-cache-version:{scope}");
+    }
 }

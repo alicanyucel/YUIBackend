@@ -97,11 +97,15 @@ builder.Services.AddAuthorization(options =>
 });
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────
+var rateLimitPermitLimit = builder.Configuration.GetValue("RateLimiting:PermitLimit", 100);
+if (rateLimitPermitLimit < 1)
+    throw new InvalidOperationException("RateLimiting:PermitLimit must be greater than zero.");
+
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("fixed", o =>
     {
-        o.PermitLimit = 100;
+        o.PermitLimit = rateLimitPermitLimit;
         o.Window = TimeSpan.FromMinutes(1);
         o.QueueLimit = 10;
         o.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;

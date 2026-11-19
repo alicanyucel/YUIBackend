@@ -6,6 +6,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using MyProject.Application.Abstractions.Cache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyProject.Domain.Entities;
@@ -34,7 +35,8 @@ public sealed record RegisterCustomerResponse(Guid CustomerId, string Username);
 public sealed class AuthController(
     AppDbContext dbContext,
     IPasswordHasher<InitialUser> passwordHasher,
-    IConfiguration configuration) : ControllerBase
+    IConfiguration configuration,
+    ICacheService cache) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost("login")]
@@ -115,6 +117,7 @@ public sealed class AuthController(
         dbContext.InitialUsers.Add(user);
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        await cache.InvalidateAsync("customers", cancellationToken);
 
         return Created($"/api/customers/{customer.Id}", new RegisterCustomerResponse(customer.Id, user.Username));
     }

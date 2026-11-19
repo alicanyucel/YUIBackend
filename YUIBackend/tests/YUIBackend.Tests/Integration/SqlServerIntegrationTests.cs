@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyProject.Application;
 using MyProject.Application.Abstractions.FinancialOperations;
+using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 using MyProject.Domain.Repositories;
@@ -33,6 +34,15 @@ public sealed class SqlServerFactAttribute : FactAttribute
 
 public sealed class SqlServerIntegrationFixture : IAsyncLifetime
 {
+    private sealed class NoOpEventBus : IEventBus
+    {
+        public Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class
+            => Task.CompletedTask;
+
+        public Task PublishAsync(object message, Type messageType, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+    }
+
     private readonly string? _adminConnectionString = Environment.GetEnvironmentVariable("YUIBACKEND_TEST_SQLSERVER");
     private string? _databaseName;
     private ServiceProvider? _serviceProvider;
@@ -80,6 +90,7 @@ public sealed class SqlServerIntegrationFixture : IAsyncLifetime
         services.AddLogging();
         services.AddApplication();
         services.AddInfrastructure(configuration);
+        services.AddScoped<IEventBus, NoOpEventBus>();
         services.AddScoped<ICustomerResourceAccess, CustomerResourceAccess>();
         _serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
         {

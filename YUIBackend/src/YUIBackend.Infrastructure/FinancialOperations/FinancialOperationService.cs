@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using MyProject.Application.Abstractions.FinancialOperations;
+using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Entities;
+using MyProject.Infrastructure.Messaging;
 using MyProject.Infrastructure.Persistence;
 
 namespace MyProject.Infrastructure.FinancialOperations;
 
-internal sealed class FinancialOperationService(AppDbContext context) : IFinancialOperationService
+internal sealed class FinancialOperationService(AppDbContext context, IEventBus eventBus) : IFinancialOperationService
 {
     private const decimal MaximumBalance = 9_999_999_999_999_999.99m;
 
@@ -80,6 +82,7 @@ internal sealed class FinancialOperationService(AppDbContext context) : IFinanci
         var financialTransaction = CreateTransaction(request);
         financialTransaction.MarkSucceeded();
         context.FinancialTransactions.Add(financialTransaction);
+        await PublishNotificationAsync(financialTransaction, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return new FinancialOperationExecution(financialTransaction, FinancialOperationFailure.None, false);
@@ -143,9 +146,24 @@ internal sealed class FinancialOperationService(AppDbContext context) : IFinanci
         var financialTransaction = CreateTransaction(request);
         financialTransaction.MarkFailed(failure.ToString());
         context.FinancialTransactions.Add(financialTransaction);
+        await PublishNotificationAsync(financialTransaction, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         return new FinancialOperationExecution(financialTransaction, failure, false);
     }
+
+    private Task PublishNotificationAsync(
+        FinancialTransaction transaction,
+        CancellationToken cancellationToken)
+        => eventBus.PublishAsync(new FinancialTransactionNotification(
+            transaction.Id,
+            transaction.TransactionNumber,
+            transaction.Type.Name,
+            transaction.Status.Name,
+            transaction.Amount,
+            transaction.SourceAccountId,
+            transaction.DestinationAccountId,
+            transaction.FailureReason,
+            transaction.OccurredAt), cancellationToken);
 
     private static FinancialTransaction CreateTransaction(FinancialOperationRequest request)
     {

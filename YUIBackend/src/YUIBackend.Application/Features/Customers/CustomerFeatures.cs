@@ -1,5 +1,7 @@
 using FluentValidation;
+using MyProject.Application.Abstractions.Cache;
 using MyProject.Application.Abstractions.Messaging;
+using MyProject.Application.Abstractions.MultiTenancy;
 using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 using MyProject.Domain.Repositories;
@@ -27,18 +29,24 @@ public sealed class GetCustomersQueryValidator : AbstractValidator<GetCustomersQ
     }
 }
 
-internal sealed class GetCustomersQueryHandler(ICustomerRepository repository)
-    : IQueryHandler<GetCustomersQuery, PagedResult<CustomerDto>>
+internal sealed class GetCustomersQueryHandler(
+    ICustomerRepository repository,
+    ICacheService cache,
+    ITenantService tenantService) : IQueryHandler<GetCustomersQuery, PagedResult<CustomerDto>>
 {
     public async Task<Result<PagedResult<CustomerDto>>> Handle(
         GetCustomersQuery request,
         CancellationToken cancellationToken)
     {
-        var page = request.CustomerId is Guid customerId
-            ? await repository.GetPageByIdAsync(customerId, request.PageNumber, request.PageSize, cancellationToken)
-            : await repository.GetPageAsync(request.PageNumber, request.PageSize, cancellationToken);
-        var result = new PagedResult<CustomerDto>(page.Items.Select(ToDto).ToList(),
-            page.TotalCount, page.PageNumber, page.PageSize);
+        var tenantId = tenantService.GetCurrentTenantId();
+        var result = await cache.GetOrCreateAsync("customers", new { request, tenantId }, async () =>
+        {
+            var page = request.CustomerId is Guid customerId
+                ? await repository.GetPageByIdAsync(customerId, request.PageNumber, request.PageSize, cancellationToken)
+                : await repository.GetPageAsync(request.PageNumber, request.PageSize, cancellationToken);
+            return new PagedResult<CustomerDto>(page.Items.Select(ToDto).ToList(),
+                page.TotalCount, page.PageNumber, page.PageSize);
+        }, cancellationToken);
         return Result.Success(result);
     }
 
@@ -49,17 +57,27 @@ internal sealed class GetCustomersQueryHandler(ICustomerRepository repository)
 
 public sealed record GetCustomerByIdQuery(Guid Id) : IQuery<CustomerDto>;
 
-internal sealed class GetCustomerByIdQueryHandler(ICustomerRepository repository)
-    : IQueryHandler<GetCustomerByIdQuery, CustomerDto>
+internal sealed class GetCustomerByIdQueryHandler(
+    ICustomerRepository repository,
+    ICacheService cache,
+    ITenantService tenantService) : IQueryHandler<GetCustomerByIdQuery, CustomerDto>
 {
     public async Task<Result<CustomerDto>> Handle(
         GetCustomerByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var customer = await repository.GetByIdAsync(request.Id, cancellationToken);
-        return customer is null
+        var tenantId = tenantService.GetCurrentTenantId();
+        var page = await cache.GetOrCreateAsync("customers", new { request.Id, tenantId }, async () =>
+        {
+            var customer = await repository.GetByIdAsync(request.Id, cancellationToken);
+            var items = customer is null
+                ? Array.Empty<CustomerDto>()
+                : [GetCustomersQueryHandler.ToDto(customer)];
+            return new PagedResult<CustomerDto>(items, items.Length, 1, 1);
+        }, cancellationToken);
+        return page.Items.Count == 0
             ? Result.Failure<CustomerDto>(Error.NotFound(nameof(Customer)))
-            : Result.Success(GetCustomersQueryHandler.ToDto(customer));
+            : Result.Success(page.Items[0]);
     }
 }
 
@@ -82,7 +100,8 @@ public sealed class CreateCustomerCommandValidator : AbstractValidator<CreateCus
 
 internal sealed class CreateCustomerCommandHandler(
     ICustomerRepository repository,
-    IUnitOfWork unitOfWork) : ICommandHandler<CreateCustomerCommand, Guid>
+    IUnitOfWork unitOfWork,
+    ICacheService cache) : ICommandHandler<CreateCustomerCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(
         CreateCustomerCommand request,
@@ -96,6 +115,7 @@ internal sealed class CreateCustomerCommandHandler(
             email, request.PhoneNumber?.Trim());
         await repository.AddAsync(customer, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync("customers", cancellationToken);
         return Result.Success(customer.Id);
     }
 }
@@ -122,7 +142,8 @@ public sealed class UpdateCustomerCommandValidator : AbstractValidator<UpdateCus
 
 internal sealed class UpdateCustomerCommandHandler(
     ICustomerRepository repository,
-    IUnitOfWork unitOfWork) : ICommandHandler<UpdateCustomerCommand>
+    IUnitOfWork unitOfWork,
+    ICacheService cache) : ICommandHandler<UpdateCustomerCommand>
 {
     public async Task<Result> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
     {
@@ -144,6 +165,7 @@ internal sealed class UpdateCustomerCommandHandler(
         customer.MarkUpdated();
         repository.Update(customer);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync("customers", cancellationToken);
         return Result.Success();
     }
 }
@@ -153,7 +175,8 @@ public sealed record DeleteCustomerCommand(Guid Id) : ICommand;
 internal sealed class DeleteCustomerCommandHandler(
     ICustomerRepository repository,
     IAccountRepository accountRepository,
-    IUnitOfWork unitOfWork) : ICommandHandler<DeleteCustomerCommand>
+    IUnitOfWork unitOfWork,
+    ICacheService cache) : ICommandHandler<DeleteCustomerCommand>
 {
     public async Task<Result> Handle(DeleteCustomerCommand request, CancellationToken cancellationToken)
     {
@@ -166,6 +189,7 @@ internal sealed class DeleteCustomerCommandHandler(
 
         customer.SoftDelete();
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync("customers", cancellationToken);
         return Result.Success();
     }
 }

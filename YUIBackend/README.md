@@ -30,10 +30,10 @@
 - **JWT Bearer:** Login başarılı olduğunda imzalı, bir saat geçerli JWT döndürülür. Login dışındaki controller uçları varsayılan olarak kimlik doğrulaması gerektirir.
 - **ASP.NET Core User Secrets:** Yerel geliştirme parolaları, bağlantı dizeleri ve JWT anahtarı kaynak kod dışında saklanır. User Secrets üretim sırları için bir secret vault yerine geçmez.
 - **Soft delete:** Silme isteği satırı fiziksel olarak silmez; `IsDeleted` işaretlenir ve EF Core global filtreleri bu satırı normal sorgulardan gizler.
-- **MassTransit + RabbitMQ:** Mesajlaşma ve EF Core transactional outbox/inbox yapılandırması.
+- **MassTransit + RabbitMQ:** EF Core transactional outbox/inbox ile ürün ve başarılı/başarısız finansal işlem bildirimleri yayınlanır. Finansal bildirimler veritabanı işlemiyle aynı outbox transaction'ına yazılır ve `financial-transaction-notifications` kuyruğunda tüketilir/loglanır.
 - **Serilog:** Uygulama logları konsol/dosya yapılandırmasına ve SQL Server'daki `dbo.ApplicationLogs` tablosuna yazılır.
 - **OpenTelemetry + Prometheus:** HTTP tracing/metrics ve `/metrics` scrape endpoint'i.
-- **Redis:** Cache/bağlantı altyapısı için yapılandırılmış istemci.
+- **Redis:** Müşteri ve ürün liste/detay GET sonuçları tenant ve filtre anahtarlarıyla cache'lenir. Yazma sonrası kapsam sürümü artırılarak eski girdiler anında geçersizleştirilir; kayıtlar 1 dakika sonra da sona erer. Bakiye ve finansal geçmiş/rapor gibi güncellik gerektiren yanıtlar cache'lenmez.
 - **Rate limiting:** Controller endpoint'lerinde sabit pencere sınırlaması (100 istek/dakika, 10 istek kuyruk limiti).
 - **Swagger / OpenAPI:** Development ortamında API keşfi ve Bearer token ile deneme.
 
@@ -238,6 +238,30 @@ Controller uçları JWT ister; istisnalar kayıt, login ve health endpoint'lerid
 ### Postman koleksiyonu
 
 `YUIBackend.postman_collection.json` dosyasını Postman'de **Import** ile içe aktarın. Koleksiyon değişkenlerinde `baseUrl` değerini çalışan API adresine göre ayarlayın; `username` ve `password` alanlarını kayıt/giriş bilgilerinizle doldurun. İlk kullanımda müşteri kaydı ve login isteklerini çalıştırın; login yanıtındaki JWT sonraki isteklerde otomatik kullanılır. Kayıt ve login dışındaki istekler JWT ister. Yönetici uçları için yönetici hesabıyla tekrar login olun. Koleksiyon başarılı kayıt ve hesap oluşturma yanıtlarından kimlikleri değişkenlere alır; transfer için `destinationAccountId` değerini Postman değişkenlerinde başka bir hesaba ayarlayın.
+
+### k6 yük testi
+
+`k6/load-test.js`, müşteri ve yönetici uçlarını kapsayan kayıt/giriş, müşteri ve hesap CRUD, yatırma/çekme/transfer, filtreli işlem geçmişi, işlem detayı, rapor ve ürün CRUD isteklerini çalıştırır. Test her sanal kullanıcı için ayrı müşteri/hesap ve silinebilir test kayıtları oluşturur; işlem kayıtları kalıcıdır. **Yalnızca test veritabanı ve yerel/test API üzerinde çalıştırın.**
+
+API'nin k6 istekleri sırasında varsayılan 100 istek/dakika sınırına takılmaması için, API'yi başlatmadan önce ayrı bir PowerShell penceresinde test ortamına özel limiti yükseltin:
+
+```powershell
+$env:RateLimiting__PermitLimit = "30000"
+$env:ASPNETCORE_URLS = "http://localhost:5270"
+dotnet run --configuration Release --project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj"
+```
+
+Başka bir PowerShell penceresinde yönetici bilgileriyle testi başlatın (k6 kurulu olmalıdır):
+
+```powershell
+$env:BASE_URL = "http://localhost:5270"
+$env:ADMIN_USERNAME = "admin"
+$env:ADMIN_PASSWORD = "<yonetici-parolasi>"
+$env:CUSTOMER_PASSWORD = "<en-az-12-karakterlik-test-parolasi>"
+k6 run ".\k6\load-test.js"
+```
+
+Varsayılan profil 5, 10 ve 20 sanal kullanıcıya çıkar; p95 yanıt süresi 1 saniyenin, hata oranı %1'in altında beklenir. API'yi test için özel limitle başlatın; test sonrasında normal ayarla yeniden başlatın. `VUs`, süre ve eşikleri `k6/load-test.js` içindeki `options` bölümünden; istekler arası beklemeyi `THINK_TIME_SECONDS` ortam değişkeninden ayarlayabilirsiniz.
 
 Yönetici müşteri oluşturma JSON örneği:
 

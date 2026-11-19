@@ -51,6 +51,7 @@ public static class DependencyInjection
             });
 
             x.AddConsumer<ProductCreatedConsumer>();
+            x.AddConsumer<FinancialTransactionNotificationConsumer>();
 
             x.AddSagaStateMachine<OrderStateMachine, OrderState>()
                 .InMemoryRepository();
@@ -63,6 +64,12 @@ public static class DependencyInjection
                 {
                     e.UseEntityFrameworkOutbox<AppDbContext>(ctx);
                     e.ConfigureConsumer<ProductCreatedConsumer>(ctx);
+                });
+
+                cfg.ReceiveEndpoint("financial-transaction-notifications", e =>
+                {
+                    e.UseEntityFrameworkOutbox<AppDbContext>(ctx);
+                    e.ConfigureConsumer<FinancialTransactionNotificationConsumer>(ctx);
                 });
 
                 cfg.ReceiveEndpoint("order-saga", e =>

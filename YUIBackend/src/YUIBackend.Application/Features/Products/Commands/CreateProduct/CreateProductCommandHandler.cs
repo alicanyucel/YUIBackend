@@ -1,3 +1,4 @@
+using MyProject.Application.Abstractions.Cache;
 using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
@@ -7,7 +8,8 @@ namespace MyProject.Application.Features.Products.Commands.CreateProduct;
 
 internal sealed class CreateProductCommandHandler(
     IProductRepository productRepository,
-    IUnitOfWork unitOfWork) : ICommandHandler<CreateProductCommand, Guid>
+    IUnitOfWork unitOfWork,
+    ICacheService cache) : ICommandHandler<CreateProductCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateProductCommand request, CancellationToken cancellationToken)
     {
@@ -18,6 +20,7 @@ internal sealed class CreateProductCommandHandler(
 
         await productRepository.AddAsync(result.Value, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync("products", cancellationToken);
 
         return Result.Success(result.Value.Id);
     }

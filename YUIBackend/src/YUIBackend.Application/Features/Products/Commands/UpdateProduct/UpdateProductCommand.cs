@@ -1,4 +1,5 @@
 using FluentValidation;
+using MyProject.Application.Abstractions.Cache;
 using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
@@ -21,7 +22,8 @@ public sealed class UpdateProductCommandValidator : AbstractValidator<UpdateProd
 
 internal sealed class UpdateProductCommandHandler(
     IProductRepository repository,
-    IUnitOfWork unitOfWork) : ICommandHandler<UpdateProductCommand>
+    IUnitOfWork unitOfWork,
+    ICacheService cache) : ICommandHandler<UpdateProductCommand>
 {
     public async Task<Result> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
     {
@@ -35,6 +37,7 @@ internal sealed class UpdateProductCommandHandler(
 
         repository.Update(product);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync("products", cancellationToken);
         return Result.Success();
     }
 }
