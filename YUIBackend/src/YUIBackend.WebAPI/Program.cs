@@ -67,7 +67,7 @@ public partial class Program {
                 Scheme = "bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "JWT token girin. Scaler, Authorization başlığına Bearer önekini ekler."
+                Description = "JWT token girin. Scalar, Authorization başlığına Bearer önekini ekler."
             });
 
             options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
