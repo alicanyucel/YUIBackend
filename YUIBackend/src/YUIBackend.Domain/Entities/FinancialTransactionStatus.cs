@@ -1,4 +1,5 @@
 using ACY.SmartEnum;
+// Ali Can Yücel SmartEnum Kütüphanesi Özel Kütüphanem 
 
 namespace MyProject.Domain.Entities;
 
