@@ -35,7 +35,7 @@
 - **OpenTelemetry + Prometheus:** HTTP tracing/metrics ve `/metrics` scrape endpoint'i.
 - **Redis:** Müşteri ve ürün liste/detay GET sonuçları tenant ve filtre anahtarlarıyla cache'lenir. Yazma sonrası kapsam sürümü artırılarak eski girdiler geçersizleştirilir; kayıtlar 1 dakika sonra sona erer. Bakiye ve finansal geçmiş/rapor gibi güncellik gerektiren yanıtlar cache'lenmez. Redis erişilemezse istekler cache'i atlayıp veritabanından devam eder; cache işlemleri en fazla 500 ms bekler ve Redis health check'i 1 saniyede zaman aşımına uğrar.
 - **Rate limiting:** Controller endpoint'lerinde sabit pencere sınırlaması (100 istek/dakika, 10 istek kuyruk limiti).
-- **Swagger / OpenAPI:** Development ortamında API keşfi ve Bearer token ile deneme.
+- **Scalar / OpenAPI:** Development ortamında API keşfi ve Bearer token ile deneme.
 
 ## Projeler
 
@@ -64,7 +64,7 @@ cd .\YUIBackend
 
 ### 1. Gizli ayarları tanımlayın
 
-Projede User Secrets zaten başlatılmıştır. SQL Server bağlantı dizenizi ve JWT ayarlarını yerel secret store'a ekleyin. Aşağıdaki `<...>` alanlarını kendi ortamınıza göre değiştirin:
+Projede User Secrets zaten başlatılmıştır. Geliştirme ayarları User Secrets'tan yüklenir; `appsettings.json` repoda tutulmaz. SQL Server bağlantı dizenizi ve JWT ayarlarını yerel secret store'a ekleyin. Aşağıdaki `<...>` alanlarını kendi ortamınıza göre değiştirin:
 
 ```powershell
 dotnet user-secrets set "ConnectionStrings:SqlServer" "<SQL-Server-connection-string>" --project ".\src\YUIBackend.WebAPI\YUIBackend.WebAPI.csproj"

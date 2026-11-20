@@ -18,14 +18,14 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
         while (searchDirectory is not null)
         {
             var candidate = Path.Combine(searchDirectory.FullName, "YUIBackend", "src", "YUIBackend.WebAPI");
-            if (File.Exists(Path.Combine(candidate, "appsettings.json")))
+            if (File.Exists(Path.Combine(candidate, "YUIBackend.WebAPI.csproj")))
             {
                 webApiDirectory = candidate;
                 break;
             }
 
             candidate = Path.Combine(searchDirectory.FullName, "src", "YUIBackend.WebAPI");
-            if (File.Exists(Path.Combine(candidate, "appsettings.json")))
+            if (File.Exists(Path.Combine(candidate, "YUIBackend.WebAPI.csproj")))
             {
                 webApiDirectory = candidate;
                 break;
@@ -36,18 +36,23 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 
         if (webApiDirectory is null)
         {
-            throw new InvalidOperationException("YUIBackend.WebAPI/appsettings.json could not be found.");
+            throw new InvalidOperationException("YUIBackend.WebAPI project directory could not be found.");
         }
 
         var config = new ConfigurationBuilder()
-            .SetBasePath(webApiDirectory)
-            .AddJsonFile("appsettings.json", optional: false)
             .AddUserSecrets("ab477883-460d-44ca-8025-d5c20255f6a4")
             .AddEnvironmentVariables()
             .Build();
 
+        var connectionString = config.GetConnectionString("SqlServer");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "ConnectionStrings:SqlServer must be configured using User Secrets or environment variables.");
+        }
+
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        optionsBuilder.UseSqlServer(config.GetConnectionString("SqlServer"));
+        optionsBuilder.UseSqlServer(connectionString);
 
         // Design-time için stub implementasyonlar
         var publisher = new NoOpPublisher();

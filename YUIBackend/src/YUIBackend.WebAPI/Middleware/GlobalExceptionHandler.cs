@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using MyProject.Domain.Abstractions;
 
 namespace MyProject.WebAPI.Middleware;
 
