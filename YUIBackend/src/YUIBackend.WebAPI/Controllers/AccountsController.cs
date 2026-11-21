@@ -10,7 +10,7 @@ public sealed record CreateAccountRequest(
     Guid CustomerId,
     string AccountNumber,
     string CurrencyCode,
-    [property: Required] decimal? Balance);
+    [param: Required] decimal? Balance);
 
 [ApiController]
 [Route("api/[controller]")]
