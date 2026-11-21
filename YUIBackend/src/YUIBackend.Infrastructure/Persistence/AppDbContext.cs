@@ -14,7 +14,7 @@ public sealed class AppDbContext(
     Func<IEventBus> eventBusFactory,
     ITenantService tenantService) : DbContext(options), IUnitOfWork
 {
-    public DbSet<Product> Products => Set<Product>();
+    
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<FinancialTransaction> FinancialTransactions => Set<FinancialTransaction>();
@@ -25,7 +25,6 @@ public sealed class AppDbContext(
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-        modelBuilder.Entity<Product>().Property(product => product.IsDeleted).HasDefaultValue(false);
         modelBuilder.Entity<Customer>().Property(customer => customer.IsDeleted).HasDefaultValue(false);
         modelBuilder.Entity<Account>().Property(account => account.IsDeleted).HasDefaultValue(false);
         modelBuilder.Entity<FinancialTransaction>().Property(transaction => transaction.IsDeleted).HasDefaultValue(false);
@@ -35,8 +34,6 @@ public sealed class AppDbContext(
         modelBuilder.AddOutboxMessageEntity();
         modelBuilder.AddOutboxStateEntity();
 
-        modelBuilder.Entity<Product>().HasQueryFilter(product =>
-            !product.IsDeleted && (CurrentTenantId == null || product.TenantId == CurrentTenantId));
         modelBuilder.Entity<Customer>().HasQueryFilter(customer =>
             !customer.IsDeleted && (CurrentTenantId == null || customer.TenantId == CurrentTenantId));
         modelBuilder.Entity<Account>().HasQueryFilter(account =>
