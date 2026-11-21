@@ -62,8 +62,11 @@ internal sealed class GetAccountByIdQueryHandler(IAccountRepository repository)
     }
 }
 
-public sealed record CreateAccountCommand(Guid CustomerId, string AccountNumber, string CurrencyCode)
-    : ICommand<Guid>;
+public sealed record CreateAccountCommand(
+    Guid CustomerId,
+    string AccountNumber,
+    string CurrencyCode,
+    decimal Balance = 0) : ICommand<Guid>;
 
 public sealed class CreateAccountCommandValidator : AbstractValidator<CreateAccountCommand>
 {
@@ -72,6 +75,11 @@ public sealed class CreateAccountCommandValidator : AbstractValidator<CreateAcco
         RuleFor(command => command.CustomerId).NotEmpty();
         RuleFor(command => command.AccountNumber).NotEmpty().MaximumLength(34);
         RuleFor(command => command.CurrencyCode).NotEmpty().Length(3).Matches("^[A-Za-z]{3}$");
+        RuleFor(command => command.Balance)
+            .GreaterThanOrEqualTo(0)
+            .LessThanOrEqualTo(9_999_999_999_999_999.99m)
+            .Must(balance => decimal.Round(balance, 2) == balance)
+            .WithMessage("Balance must be non-negative, within the supported range, and have at most two decimal places.");
     }
 }
 
@@ -94,7 +102,7 @@ internal sealed class CreateAccountCommandHandler(
             return Result.Failure<Guid>(Error.Conflict(nameof(Account)));
 
         var account = new Account(request.CustomerId, request.AccountNumber.Trim(),
-            request.CurrencyCode.ToUpperInvariant());
+            request.CurrencyCode.ToUpperInvariant(), request.Balance);
         await accountRepository.AddAsync(account, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(account.Id);

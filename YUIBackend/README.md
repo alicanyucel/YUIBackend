@@ -287,11 +287,12 @@ Hesap oluşturma JSON örneği:
 {
   "customerId": "<customer-guid>",
   "accountNumber": "TR000000000000000000000000",
-  "currencyCode": "TRY"
+  "currencyCode": "TRY",
+  "balance": 2500.00
 }
 ```
 
-Müşteri hesabı açarken `customerId` sunucu tarafından oturumdaki müşteri kimliğiyle değiştirilir; yönetici bu alanda müşteri seçebilir. Bir müşteri birden fazla hesap açabilir.
+`balance` isteğe bağlıdır; gönderilmezse hesap 0 bakiye ile açılır. Başlangıç bakiyesi sıfır veya pozitif olmalı, en fazla iki ondalık basamak içermeli ve desteklenen üst sınırı aşmamalıdır. Müşteri hesabı açarken `customerId` sunucu tarafından oturumdaki müşteri kimliğiyle değiştirilir; yönetici bu alanda müşteri seçebilir. Bir müşteri birden fazla hesap açabilir.
 
 Hesap güncelleme JSON örneği:
 

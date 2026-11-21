@@ -6,11 +6,12 @@ public sealed class Account : Entity
 {
     private Account() { }
 
-    public Account(Guid customerId, string accountNumber, string currencyCode)
+    public Account(Guid customerId, string accountNumber, string currencyCode, decimal balance = 0)
     {
         CustomerId = customerId;
         AccountNumber = accountNumber;
         CurrencyCode = currencyCode;
+        Balance = balance;
     }
 
     public Guid CustomerId { get; set; }
