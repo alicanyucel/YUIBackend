@@ -227,11 +227,6 @@ Controller uçları JWT ister; istisnalar kayıt, login ve health endpoint'lerid
 | `GET` | `/api/financialtransactions/{id}` | Finansal işlem detayı |
 | `GET` | `/api/financialtransactions/account/{accountId}` | Hesap bazlı, filtreli ve sayfalı finansal işlem geçmişi |
 | `GET` | `/api/financialtransactions/reports` | Günlük, haftalık veya aylık işlem raporu; hesap filtresi isteğe bağlı |
-| `GET` | `/api/products?pageNumber=1&pageSize=20` | (Yönetici) Ürün sayfalı listesi |
-| `GET` | `/api/products/{id}` | (Yönetici) Ürün detayı |
-| `POST` | `/api/products` | (Yönetici) Ürün oluşturur |
-| `PUT` | `/api/products/{id}` | (Yönetici) Ürünü günceller |
-| `DELETE` | `/api/products/{id}` | (Yönetici) Ürünü soft delete eder. |
 | `GET` | `/health` | Servis health-check özeti; JWT istemez. |
 | `GET` | `/metrics` | Prometheus metrics çıktısı; dış erişimi production'da ağ/policy ile sınırlayın. |
 
