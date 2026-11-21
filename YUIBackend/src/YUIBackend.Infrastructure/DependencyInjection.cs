@@ -1,6 +1,5 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
-using MyProject.Application.Abstractions.FinancialOperations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyProject.Application.Abstractions.Messaging;
@@ -9,7 +8,6 @@ using MyProject.Infrastructure.Messaging;
 using MyProject.Infrastructure.Messaging.Consumers;
 using MyProject.Infrastructure.Messaging.Sagas;
 using MyProject.Infrastructure.Persistence;
-using Scrutor;
 using StackExchange.Redis;
 
 namespace MyProject.Infrastructure;
