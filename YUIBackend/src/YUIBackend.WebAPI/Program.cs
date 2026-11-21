@@ -54,11 +54,16 @@ public partial class Program {
             {
                 Title = "YUIBackend API",
                 Version = "v1",
+                Description = "Müşteri, hesap ve finansal işlem endpoint'leri.",
                 Contact = new OpenApiContact
                 {
                     Email = "yucelalicandan@hotmail.com"
                 }
             });
+
+            options.IncludeXmlComments(Path.Combine(
+                AppContext.BaseDirectory,
+                $"{typeof(Program).Assembly.GetName().Name}.xml"));
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
@@ -169,6 +174,7 @@ public partial class Program {
             app.MapSwagger("/swagger/{documentName}/swagger.json").AllowAnonymous();
             app.MapScalarApiReference(options => options
                 .WithTitle("YUIBackend API")
+                .WithOperationTitleSource(OperationTitleSource.Summary)
                 .WithOpenApiRoutePattern("../swagger/{documentName}/swagger.json"))
                 .AllowAnonymous();
         }

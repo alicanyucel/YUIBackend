@@ -10,6 +10,7 @@ namespace MyProject.WebAPI.Controllers;
 [Route("api/[controller]")]
 public sealed class CustomersController(ISender sender, ICustomerResourceAccess resourceAccess) : ControllerBase
 {
+    /// <summary>Müşterileri sayfalı listeler; müşteri kullanıcıları yalnızca kendi profilini görür.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int pageNumber = 1,
@@ -25,6 +26,7 @@ public sealed class CustomersController(ISender sender, ICustomerResourceAccess 
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 
+    /// <summary>Belirtilen müşterinin profil bilgilerini getirir.</summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -35,6 +37,7 @@ public sealed class CustomersController(ISender sender, ICustomerResourceAccess 
         return result.IsSuccess ? Ok(result.Value) : NotFound(result.Error);
     }
 
+    /// <summary>Yeni bir müşteri oluşturur. Yalnızca yöneticiler kullanabilir.</summary>
     [Authorize(Policy = "Administrator")]
     [HttpPost]
     public async Task<IActionResult> Create(
@@ -47,6 +50,7 @@ public sealed class CustomersController(ISender sender, ICustomerResourceAccess 
             : BadRequest(result.Error);
     }
 
+    /// <summary>Müşteri profilini günceller; müşteri kendi aktiflik durumunu değiştiremez.</summary>
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(
         Guid id,
@@ -70,6 +74,7 @@ public sealed class CustomersController(ISender sender, ICustomerResourceAccess 
             : BadRequest(result.Error);
     }
 
+    /// <summary>Müşteri profilini siler. Yalnızca yöneticiler kullanabilir.</summary>
     [Authorize(Policy = "Administrator")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)

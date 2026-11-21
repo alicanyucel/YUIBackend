@@ -66,7 +66,7 @@ public sealed record CreateAccountCommand(
     Guid CustomerId,
     string AccountNumber,
     string CurrencyCode,
-    decimal Balance = 0) : ICommand<Guid>;
+    decimal Balance = 0) : ICommand<AccountDto>;
 
 public sealed class CreateAccountCommandValidator : AbstractValidator<CreateAccountCommand>
 {
@@ -86,26 +86,26 @@ public sealed class CreateAccountCommandValidator : AbstractValidator<CreateAcco
 internal sealed class CreateAccountCommandHandler(
     IAccountRepository accountRepository,
     ICustomerRepository customerRepository,
-    IUnitOfWork unitOfWork) : ICommandHandler<CreateAccountCommand, Guid>
+    IUnitOfWork unitOfWork) : ICommandHandler<CreateAccountCommand, AccountDto>
 {
-    public async Task<Result<Guid>> Handle(
+    public async Task<Result<AccountDto>> Handle(
         CreateAccountCommand request,
         CancellationToken cancellationToken)
     {
         var customer = await customerRepository.GetByIdAsync(request.CustomerId, cancellationToken);
         if (customer is null)
-            return Result.Failure<Guid>(Error.NotFound(nameof(Customer)));
+            return Result.Failure<AccountDto>(Error.NotFound(nameof(Customer)));
         if (!customer.IsActive)
-            return Result.Failure<Guid>(Error.Validation(nameof(Customer), "An inactive customer cannot open an account."));
+            return Result.Failure<AccountDto>(Error.Validation(nameof(Customer), "An inactive customer cannot open an account."));
 
         if (await accountRepository.GetByAccountNumberAsync(request.AccountNumber, cancellationToken) is not null)
-            return Result.Failure<Guid>(Error.Conflict(nameof(Account)));
+            return Result.Failure<AccountDto>(Error.Conflict(nameof(Account)));
 
         var account = new Account(request.CustomerId, request.AccountNumber.Trim(),
             request.CurrencyCode.ToUpperInvariant(), request.Balance);
         await accountRepository.AddAsync(account, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result.Success(account.Id);
+        return Result.Success(GetAccountsQueryHandler.ToDto(account));
     }
 }
 

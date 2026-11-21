@@ -38,6 +38,7 @@ public sealed class AuthController(
     IConfiguration configuration,
     ICacheService cache) : ControllerBase
 {
+    /// <summary>Kullanıcı girişini doğrular ve korumalı endpoint'ler için JWT erişim belirteci verir.</summary>
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(
@@ -82,6 +83,7 @@ public sealed class AuthController(
         return Ok(CreateToken(user));
     }
 
+    /// <summary>Yeni bir müşteri profili ve bu profile bağlı giriş hesabı oluşturur.</summary>
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register(

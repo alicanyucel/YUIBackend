@@ -5,10 +5,17 @@ using MyProject.WebAPI.Authorization;
 
 namespace MyProject.WebAPI.Controllers;
 
+public sealed record CreateAccountRequest(
+    Guid CustomerId,
+    string AccountNumber,
+    string CurrencyCode,
+    decimal Balance = 0);
+
 [ApiController]
 [Route("api/[controller]")]
 public sealed class AccountsController(ISender sender, ICustomerResourceAccess resourceAccess) : ControllerBase
 {
+    /// <summary>Hesapları sayfalı olarak listeler; müşteri yalnızca kendi hesaplarını görür.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int pageNumber = 1,
@@ -24,6 +31,7 @@ public sealed class AccountsController(ISender sender, ICustomerResourceAccess r
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 
+    /// <summary>Hesap bilgilerini ve mevcut bakiyesini getirir.</summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -34,11 +42,17 @@ public sealed class AccountsController(ISender sender, ICustomerResourceAccess r
         return result.IsSuccess ? Ok(result.Value) : NotFound(result.Error);
     }
 
+    /// <summary>Yeni bir hesap açar; isteğe bağlı başlangıç bakiyesi ve hesap bilgilerini döndürür.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(
-        [FromBody] CreateAccountCommand command,
+        [FromBody] CreateAccountRequest request,
         CancellationToken cancellationToken)
     {
+        var command = new CreateAccountCommand(
+            request.CustomerId,
+            request.AccountNumber,
+            request.CurrencyCode,
+            request.Balance);
         var isAdmin = await resourceAccess.IsAdministratorAsync(User, cancellationToken);
         if (!isAdmin)
         {
@@ -50,10 +64,11 @@ public sealed class AccountsController(ISender sender, ICustomerResourceAccess r
 
         var result = await sender.Send(command, cancellationToken);
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetById), new { id = result.Value }, result.Value)
+            ? CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value)
             : BadRequest(result.Error);
     }
 
+    /// <summary>Hesap durumunu günceller.</summary>
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(
         Guid id,
@@ -73,6 +88,7 @@ public sealed class AccountsController(ISender sender, ICustomerResourceAccess r
             : BadRequest(result.Error);
     }
 
+    /// <summary>Hesabı siler; silme işlemi için bakiyenin sıfır olması gerekir.</summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

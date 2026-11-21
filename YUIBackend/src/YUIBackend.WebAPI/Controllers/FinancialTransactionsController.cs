@@ -17,6 +17,7 @@ public sealed record TransferMoneyRequest(
 [Route("api/[controller]")]
 public sealed class FinancialTransactionsController(ISender sender, ICustomerResourceAccess resourceAccess) : ControllerBase
 {
+    /// <summary>Belirtilen hesaba para yatırır; yinelenen işlemleri önlemek için Idempotency-Key gönderilir.</summary>
     [HttpPost("deposit")]
     public async Task<IActionResult> Deposit(
         [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
@@ -34,6 +35,7 @@ public sealed class FinancialTransactionsController(ISender sender, ICustomerRes
         return result.IsSuccess ? OperationStatus(result.Value) : BadRequest(result.Error);
     }
 
+    /// <summary>Belirtilen hesaptan para çeker; yinelenen işlemleri önlemek için Idempotency-Key gönderilir.</summary>
     [HttpPost("withdraw")]
     public async Task<IActionResult> Withdraw(
         [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
@@ -51,6 +53,7 @@ public sealed class FinancialTransactionsController(ISender sender, ICustomerRes
         return result.IsSuccess ? OperationStatus(result.Value) : BadRequest(result.Error);
     }
 
+    /// <summary>Bir hesaptan diğerine para aktarır; yinelenen işlemleri önlemek için Idempotency-Key gönderilir.</summary>
     [HttpPost("transfer")]
     public async Task<IActionResult> Transfer(
         [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
@@ -69,6 +72,7 @@ public sealed class FinancialTransactionsController(ISender sender, ICustomerRes
         return result.IsSuccess ? OperationStatus(result.Value) : BadRequest(result.Error);
     }
 
+    /// <summary>Finansal işlemleri filtrelerle arar ve sayfalı olarak listeler.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] Guid? accountId = null,
@@ -97,6 +101,7 @@ public sealed class FinancialTransactionsController(ISender sender, ICustomerRes
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
 
+    /// <summary>Belirtilen finansal işlemin ayrıntılarını getirir.</summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -107,6 +112,7 @@ public sealed class FinancialTransactionsController(ISender sender, ICustomerRes
         return result.IsSuccess ? Ok(result.Value) : NotFound(result.Error);
     }
 
+    /// <summary>Belirtilen hesaba ait işlem geçmişini filtreler ve sayfalı olarak listeler.</summary>
     [HttpGet("account/{accountId:guid}")]
     public async Task<IActionResult> GetAccountHistory(
         Guid accountId,
@@ -134,6 +140,7 @@ public sealed class FinancialTransactionsController(ISender sender, ICustomerRes
             : BadRequest(result.Error);
     }
 
+    /// <summary>Seçilen tarih aralığı ve döneme göre finansal işlem raporu getirir.</summary>
     [HttpGet("reports")]
     public async Task<IActionResult> GetReport(
         [FromQuery] DateTime? fromUtc,
