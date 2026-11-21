@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MyProject.Application.Features.Accounts;
@@ -9,7 +10,7 @@ public sealed record CreateAccountRequest(
     Guid CustomerId,
     string AccountNumber,
     string CurrencyCode,
-    decimal Balance = 0);
+    [property: Required] decimal? Balance);
 
 [ApiController]
 [Route("api/[controller]")]
@@ -42,17 +43,20 @@ public sealed class AccountsController(ISender sender, ICustomerResourceAccess r
         return result.IsSuccess ? Ok(result.Value) : NotFound(result.Error);
     }
 
-    /// <summary>Yeni bir hesap açar; isteğe bağlı başlangıç bakiyesi ve hesap bilgilerini döndürür.</summary>
+    /// <summary>Yeni bir hesap açar; başlangıç bakiyesinin istekte açıkça belirtilmesi gerekir.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CreateAccountRequest request,
         CancellationToken cancellationToken)
     {
+        if (request.Balance is not decimal balance)
+            return BadRequest("Balance is required.");
+
         var command = new CreateAccountCommand(
             request.CustomerId,
             request.AccountNumber,
             request.CurrencyCode,
-            request.Balance);
+            balance);
         var isAdmin = await resourceAccess.IsAdministratorAsync(User, cancellationToken);
         if (!isAdmin)
         {

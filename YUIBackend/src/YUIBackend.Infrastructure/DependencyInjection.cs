@@ -56,7 +56,6 @@ public static class DependencyInjection
                 options.UseBusOutbox();
             });
 
-            x.AddConsumer<ProductCreatedConsumer>();
             x.AddConsumer<FinancialTransactionNotificationConsumer>();
 
             x.AddSagaStateMachine<OrderStateMachine, OrderState>()
@@ -65,12 +64,6 @@ public static class DependencyInjection
             x.UsingRabbitMq((ctx, cfg) =>
             {
                 cfg.Host(configuration.GetConnectionString("RabbitMQ"));
-
-                cfg.ReceiveEndpoint("product-created", e =>
-                {
-                    e.UseEntityFrameworkOutbox<AppDbContext>(ctx);
-                    e.ConfigureConsumer<ProductCreatedConsumer>(ctx);
-                });
 
                 cfg.ReceiveEndpoint("financial-transaction-notifications", e =>
                 {

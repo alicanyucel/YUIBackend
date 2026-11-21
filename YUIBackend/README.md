@@ -292,7 +292,7 @@ Hesap oluşturma JSON örneği:
 }
 ```
 
-`balance` isteğe bağlıdır; gönderilmezse hesap 0 bakiye ile açılır. Başlangıç bakiyesi sıfır veya pozitif olmalı, en fazla iki ondalık basamak içermeli ve desteklenen üst sınırı aşmamalıdır. Başarılı `POST` yanıtı oluşturulan hesabın `id`, `balance` ve diğer alanlarını döndürür. Müşteri hesabı açarken `customerId` sunucu tarafından oturumdaki müşteri kimliğiyle değiştirilir; yönetici bu alanda müşteri seçebilir. Bir müşteri birden fazla hesap açabilir.
+`balance` alanı zorunludur; gönderilmezse istek reddedilir. Başlangıç bakiyesi sıfır veya pozitif olmalı, en fazla iki ondalık basamak içermeli ve desteklenen üst sınırı aşmamalıdır. Başarılı `POST` yanıtı oluşturulan hesabın `id`, `balance` ve diğer alanlarını döndürür. Müşteri hesabı açarken `customerId` sunucu tarafından oturumdaki müşteri kimliğiyle değiştirilir; yönetici bu alanda müşteri seçebilir. Bir müşteri birden fazla hesap açabilir.
 
 Hesap güncelleme JSON örneği:
 
