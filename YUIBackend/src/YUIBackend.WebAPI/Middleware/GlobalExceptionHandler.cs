@@ -23,7 +23,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
 
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
         await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
-
+        // sukur
         return true;
     }
 }
