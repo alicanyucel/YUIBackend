@@ -1,8 +1,13 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using MyProject.Application.Features.FinancialTransactions;
 using MyProject.WebAPI.Authorization;
+using YUIBackend.Application.Features.FinancialTransactions.DepositMoney;
 using YUIBackend.Application.Features.FinancialTransactions.FinancialOperations;
+using YUIBackend.Application.Features.FinancialTransactions.GetAccountTransaction;
+using YUIBackend.Application.Features.FinancialTransactions.GetFinancialReport;
+using YUIBackend.Application.Features.FinancialTransactions.GetFinancialTransaction;
+using YUIBackend.Application.Features.FinancialTransactions.TransferMoney;
+using YUIBackend.Application.Features.FinancialTransactions.WithdrawMoney;
 
 namespace MyProject.WebAPI.Controllers;
 

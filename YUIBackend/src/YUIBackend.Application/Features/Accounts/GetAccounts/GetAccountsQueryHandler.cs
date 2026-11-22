@@ -2,6 +2,7 @@ using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 using MyProject.Domain.Repositories;
+using YUIBackend.Application.DTOS;
 
 namespace YUIBackend.Application.Features.Accounts.GetAccounts;
 

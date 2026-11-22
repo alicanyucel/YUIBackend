@@ -1,5 +1,6 @@
 using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Abstractions;
+using YUIBackend.Application.DTOS;
 
 namespace YUIBackend.Application.Features.Accounts.GetAccounts;
 

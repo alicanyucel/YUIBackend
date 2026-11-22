@@ -1,8 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using MyProject.Application.Features.Accounts;
 using MyProject.WebAPI.Authorization;
+using YUIBackend.Application.Features.Accounts.CreateAccount;
+using YUIBackend.Application.Features.Accounts.DeleteAccount;
+using YUIBackend.Application.Features.Accounts.GetAccountById;
+using YUIBackend.Application.Features.Accounts.GetAccounts;
 using YUIBackend.Application.Features.Accounts.UpdateAccount;
 
 namespace MyProject.WebAPI.Controllers;

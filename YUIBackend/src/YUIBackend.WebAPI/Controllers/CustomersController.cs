@@ -1,9 +1,11 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MyProject.Application.Features.Customers;
 using MyProject.WebAPI.Authorization;
 using YUIBackend.Application.Features.Customers.CreateCustomers;
+using YUIBackend.Application.Features.Customers.DeleteCustomers;
+using YUIBackend.Application.Features.Customers.GetCustomerById;
+using YUIBackend.Application.Features.Customers.GetCustomers;
 using YUIBackend.Application.Features.Customers.UpdateCustomers;
 
 namespace MyProject.WebAPI.Controllers;
