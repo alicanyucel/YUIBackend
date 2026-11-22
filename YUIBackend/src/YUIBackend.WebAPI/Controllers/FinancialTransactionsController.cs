@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MyProject.Application.Features.FinancialTransactions;
 using MyProject.WebAPI.Authorization;
+using YUIBackend.Application.Features.FinancialTransactions.FinancialOperations;
 
 namespace MyProject.WebAPI.Controllers;
 

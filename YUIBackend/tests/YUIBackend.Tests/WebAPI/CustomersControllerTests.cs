@@ -3,11 +3,11 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using MyProject.Application.Features.Customers;
 using MyProject.Domain.Abstractions;
 using MyProject.WebAPI.Authorization;
 using MyProject.WebAPI.Controllers;
 using NSubstitute;
+using YUIBackend.Application.Features.Customers.UpdateCustomers;
 
 namespace MyProject.Tests.WebAPI;
 

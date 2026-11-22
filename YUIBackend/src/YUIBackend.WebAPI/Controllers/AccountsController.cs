@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MyProject.Application.Features.Accounts;
 using MyProject.WebAPI.Authorization;
+using YUIBackend.Application.Features.Accounts.UpdateAccount;
 
 namespace MyProject.WebAPI.Controllers;
 
