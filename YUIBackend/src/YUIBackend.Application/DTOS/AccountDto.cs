@@ -1,4 +1,4 @@
-namespace MyProject.Application.Features.Account;
+namespace YUIBackend.Application.DTOS;
 
 public sealed record AccountDto(
     Guid Id,

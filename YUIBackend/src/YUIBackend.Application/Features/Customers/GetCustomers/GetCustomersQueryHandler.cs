@@ -4,7 +4,7 @@ using MyProject.Application.Abstractions.MultiTenancy;
 using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 using MyProject.Domain.Repositories;
-using YUIBackend.Application.Features.DTOS;
+using YUIBackend.Application.DTOS;
 
 namespace YUIBackend.Application.Features.Customers.GetCustomers;
 

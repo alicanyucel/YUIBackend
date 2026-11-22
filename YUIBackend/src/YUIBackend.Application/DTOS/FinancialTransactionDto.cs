@@ -1,4 +1,4 @@
-namespace MyProject.Application.Features.FinancialTransactions;
+namespace YUIBackend.Application.DTOS;
 
 public sealed record FinancialTransactionDto(
     Guid Id,

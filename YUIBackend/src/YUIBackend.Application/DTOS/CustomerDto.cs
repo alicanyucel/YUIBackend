@@ -1,4 +1,4 @@
-namespace YUIBackend.Application.Features.DTOS;
+namespace YUIBackend.Application.DTOS;
 
 public sealed record CustomerDto(
     Guid Id,

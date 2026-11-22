@@ -1,6 +1,6 @@
 using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Abstractions;
-using YUIBackend.Application.Features.DTOS;
+using YUIBackend.Application.DTOS;
 
 namespace YUIBackend.Application.Features.Customers.GetCustomers;
 

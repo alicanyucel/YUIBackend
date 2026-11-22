@@ -1,8 +1,8 @@
 using MyProject.Application.Abstractions.Messaging;
-using MyProject.Application.Features.FinancialTransactions;
 using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 using MyProject.Domain.Repositories;
+using YUIBackend.Application.DTOS;
 using YUIBackend.Application.Features.FinancialTransactions.GetFinancialTransaction;
 using YUIBackend.Domain.Enums;
 

@@ -1,6 +1,6 @@
 using MyProject.Application.Abstractions.Messaging;
-using MyProject.Application.Features.FinancialTransactions;
 using MyProject.Domain.Abstractions;
+using YUIBackend.Application.DTOS;
 
 namespace YUIBackend.Application.Features.FinancialTransactions.GetAccountTransaction;
 
