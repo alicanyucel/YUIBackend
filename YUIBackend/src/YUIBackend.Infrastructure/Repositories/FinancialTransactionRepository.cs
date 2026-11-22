@@ -4,6 +4,7 @@ using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 using MyProject.Domain.Repositories;
 using MyProject.Infrastructure.Persistence;
+using YUIBackend.Domain.Enums;
 
 namespace MyProject.Infrastructure.Repositories;
 

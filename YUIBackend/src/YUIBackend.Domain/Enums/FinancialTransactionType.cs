@@ -1,6 +1,6 @@
 using ACY.SmartEnum;
 // Ali Can Yücel SmartEnum Kütüphanesi Özel Kütüphanem 
-namespace MyProject.Domain.Entities;
+namespace YUIBackend.Domain.Enums;
 
 public sealed class FinancialTransactionType : SmartEnums<FinancialTransactionType>
 {

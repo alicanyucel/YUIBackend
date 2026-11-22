@@ -2,6 +2,7 @@ using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 using MyProject.Domain.Repositories;
+using YUIBackend.Domain.Enums;
 
 namespace YUIBackend.Application.Features.Accounts.UpdateAccount;
 

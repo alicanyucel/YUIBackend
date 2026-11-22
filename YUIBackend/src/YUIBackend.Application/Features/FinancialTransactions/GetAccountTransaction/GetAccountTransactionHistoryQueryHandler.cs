@@ -4,6 +4,7 @@ using MyProject.Domain.Abstractions;
 using MyProject.Domain.Entities;
 using MyProject.Domain.Repositories;
 using YUIBackend.Application.Features.FinancialTransactions.GetFinancialTransaction;
+using YUIBackend.Domain.Enums;
 
 namespace YUIBackend.Application.Features.FinancialTransactions.GetAccountTransaction;
 

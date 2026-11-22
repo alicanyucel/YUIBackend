@@ -1,4 +1,4 @@
-using MyProject.Domain.Entities;
+using YUIBackend.Domain.Enums;
 
 namespace MyProject.Domain.Abstractions;
 

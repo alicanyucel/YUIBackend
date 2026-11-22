@@ -1,5 +1,5 @@
 using FluentValidation;
-using MyProject.Domain.Entities;
+using YUIBackend.Domain.Enums;
 
 namespace YUIBackend.Application.Features.FinancialTransactions.GetFinancialTransaction;
 

@@ -1,8 +1,8 @@
 using FluentAssertions;
 using MyProject.Application.Abstractions.FinancialOperations;
 using MyProject.Application.Features.FinancialTransactions;
-using MyProject.Domain.Entities;
 using NSubstitute;
+using YUIBackend.Domain.Enums;
 
 namespace MyProject.Tests.Application.FinancialTransactions;
 

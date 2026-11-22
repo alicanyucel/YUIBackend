@@ -1,6 +1,6 @@
 using ACY.SmartEnum;
 
-namespace MyProject.Domain.Entities;
+namespace YUIBackend.Domain.Enums;
 
 public sealed class AccountStatus : SmartEnums<AccountStatus>
 {

@@ -14,6 +14,7 @@ using MyProject.Domain.Repositories;
 using MyProject.Infrastructure;
 using MyProject.Infrastructure.Persistence;
 using MyProject.WebAPI.Authorization;
+using YUIBackend.Domain.Enums;
 
 namespace MyProject.Tests.Integration;
 

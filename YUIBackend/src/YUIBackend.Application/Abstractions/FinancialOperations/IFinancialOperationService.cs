@@ -1,4 +1,5 @@
 using MyProject.Domain.Entities;
+using YUIBackend.Domain.Enums;
 
 namespace MyProject.Application.Abstractions.FinancialOperations;
 

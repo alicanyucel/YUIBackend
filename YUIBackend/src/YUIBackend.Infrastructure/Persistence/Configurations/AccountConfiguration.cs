@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MyProject.Domain.Entities;
+using YUIBackend.Domain.Enums;
 
 namespace MyProject.Infrastructure.Persistence.Configurations;
 

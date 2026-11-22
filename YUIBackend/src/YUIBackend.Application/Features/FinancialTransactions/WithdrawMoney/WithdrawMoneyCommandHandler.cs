@@ -1,9 +1,9 @@
 using MyProject.Application.Abstractions.FinancialOperations;
 using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Abstractions;
-using MyProject.Domain.Entities;
 using YUIBackend.Application.Features.FinancialTransactions.DepositMoney;
 using YUIBackend.Application.Features.FinancialTransactions.FinancialOperations;
+using YUIBackend.Domain.Enums;
 
 namespace YUIBackend.Application.Features.FinancialTransactions.WithdrawMoney;
 

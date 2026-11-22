@@ -4,6 +4,7 @@ using MyProject.Application.Abstractions.Messaging;
 using MyProject.Domain.Entities;
 using MyProject.Infrastructure.Messaging;
 using MyProject.Infrastructure.Persistence;
+using YUIBackend.Domain.Enums;
 
 namespace MyProject.Infrastructure.FinancialOperations;
 
